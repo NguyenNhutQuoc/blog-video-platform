@@ -1,0 +1,222 @@
+version: "3.9"
+
+# =====================================================
+# DOCKER COMPOSE - Blog & Video Platform
+# Services: PostgreSQL, Redis, MinIO, Ollama, API, Worker
+# =====================================================
+
+services:
+  # ===================================================
+  # 1. PostgreSQL 16 with pgvector
+  # ===================================================
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: blog-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: blog_platform
+      POSTGRES_USER: blog_user
+      POSTGRES_PASSWORD: blog_password_change_in_production
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../database/migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/001_initial_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blog_user -d blog_platform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blog-network
+
+  # ===================================================
+  # 2. Redis 7 (Cache + Queue)
+  # ===================================================
+  redis:
+    image: redis:7-alpine
+    container_name: blog-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass redis_password_change_in_production
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blog-network
+
+  # ===================================================
+  # 3. MinIO (S3-compatible Object Storage)
+  # ===================================================
+  minio:
+    image: minio/minio:latest
+    container_name: blog-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio_admin
+      MINIO_ROOT_PASSWORD: minio_password_change_in_production
+    ports:
+      - "9000:9000" # API
+      - "9001:9001" # Console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - blog-network
+
+  # ===================================================
+  # 4. MinIO Client (Create buckets on startup)
+  # ===================================================
+  minio-client:
+    image: minio/mc:latest
+    container_name: blog-minio-client
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      /usr/bin/mc alias set myminio http://minio:9000 minio_admin minio_password_change_in_production;
+      /usr/bin/mc mb myminio/videos --ignore-existing;
+      /usr/bin/mc mb myminio/images --ignore-existing;
+      /usr/bin/mc mb myminio/thumbnails --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/videos;
+      /usr/bin/mc anonymous set download myminio/images;
+      /usr/bin/mc anonymous set download myminio/thumbnails;
+      echo 'MinIO buckets created successfully';
+      exit 0;
+      "
+    networks:
+      - blog-network
+
+  # ===================================================
+  # 5. Ollama (Local LLM for AI features)
+  # ===================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: blog-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - blog-network
+    # Optional: Uncomment if you have GPU
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ===================================================
+  # 6. Ollama Model Puller (Pull models on startup)
+  # ===================================================
+  ollama-puller:
+    image: curlimages/curl:latest
+    container_name: blog-ollama-puller
+    depends_on:
+      - ollama
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for Ollama to be ready...';
+      sleep 30;
+      echo 'Pulling nomic-embed-text model...';
+      curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"nomic-embed-text\"}';
+      echo 'Pulling llama3 model...';
+      curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"llama3\"}';
+      echo 'Models pulled successfully';
+      exit 0;
+      "
+    networks:
+      - blog-network
+
+  # ===================================================
+  # 9. pgAdmin (Optional - Database Management)
+  # ===================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: blog-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@blogplatform.local
+      PGADMIN_DEFAULT_PASSWORD: admin_password_change_in_production
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - blog-network
+    profiles:
+      - tools
+
+  # ===================================================
+  # 10. Redis Commander (Optional - Redis Management)
+  # ===================================================
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: blog-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:redis_password_change_in_production
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - blog-network
+    profiles:
+      - tools
+
+# =====================================================
+# NETWORKS
+# =====================================================
+networks:
+  blog-network:
+    driver: bridge
+    name: blog-network
+
+# =====================================================
+# VOLUMES
+# =====================================================
+volumes:
+  postgres_data:
+    driver: local
+    name: blog-postgres-data
+
+  redis_data:
+    driver: local
+    name: blog-redis-data
+
+  minio_data:
+    driver: local
+    name: blog-minio-data
+
+  ollama_data:
+    driver: local
+    name: blog-ollama-data
+
+  pgadmin_data:
+    driver: local
+    name: blog-pgadmin-data

@@ -1,0 +1,97 @@
+# =====================================================
+# .dockerignore - Exclude files from Docker build context
+# =====================================================
+
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist
+build
+.next
+out
+.expo
+.expo-shared
+
+# Testing
+coverage
+.nyc_output
+*.test.ts
+*.spec.ts
+__tests__
+__mocks__
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env*.local
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+*.md
+docs
+README.md
+CHANGELOG.md
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+azure-pipelines.yml
+
+# Logs
+logs
+*.log
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Runtime data
+lib-cov
+.grunt
+.lock-wscript
+.npm
+.eslintcache
+.node_repl_history
+.yarn-integrity
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Temporary files
+tmp
+temp
+*.tmp
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Optional files
+*.pem
+*.key
+*.cert

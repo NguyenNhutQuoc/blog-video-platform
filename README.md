@@ -1,90 +1,262 @@
-# BlogVideoPlatform
+# 🎬 Blog & Video Platform
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+Modern full-stack blog and video platform with AI-powered features built with Next.js, React Native, and Node.js.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
+---
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/js?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## 🌟 Features
 
-## Finish your CI setup
+### Core Features
+- 📝 **Rich Text Blog** - Create and publish blog posts with advanced editor
+- 🎥 **Video Streaming** - Upload and stream videos with HLS adaptive quality (1080p-360p)
+- 🔍 **AI-Powered Search** - Semantic search and RAG (Retrieval Augmented Generation)
+- 💬 **Comments System** - Engage with 1-level reply support
+- ⭐ **Engagement** - Like, bookmark, and organize content
+- 📊 **Analytics** - Comprehensive stats and insights
 
-[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/9kVazJCH3e)
+### Platforms
+- 🌐 **Web** - Next.js 14 with Material UI (Pastel theme)
+- 📱 **Mobile** - React Native with Expo (iOS & Android)
+- 🔌 **API** - RESTful API with TypeScript
 
+---
 
-## Generate a library
+## 🏗️ Architecture
 
-```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@my-org/pkg1
+### Technology Stack
+
+| Component | Technology |
+|-----------|-----------|
+| **Frontend Web** | Next.js 14, TypeScript, Material UI |
+| **Frontend Mobile** | React Native, Expo SDK 50+ |
+| **Backend API** | Node.js 20, Express/Fastify, TypeScript |
+| **Database** | PostgreSQL 16 + pgvector |
+| **Cache & Queue** | Redis 7 + BullMQ |
+| **Storage** | MinIO (S3-compatible) |
+| **AI/ML** | Ollama (Llama 3, nomic-embed-text) |
+| **Video Processing** | FFmpeg (HLS encoding) |
+| **Monorepo** | Nx Workspace |
+
+### Infrastructure
+- **Docker** - Containerized services
+- **Docker Compose** - Multi-service orchestration
+- **CI/CD** - GitHub Actions (coming soon)
+
+---
+
+## 📁 Project Structure
+
+```
+blog-video-platform/
+├── apps/                       # Applications
+│   ├── api-server/            # Node.js backend
+│   ├── video-worker/          # FFmpeg worker
+│   ├── web-client/            # Next.js web app (Tuần 4+)
+│   └── mobile-app/            # React Native (Tuần 7+)
+│
+├── libs/                       # Shared libraries
+│   ├── shared/                # Cross-platform code
+│   └── backend/               # Backend shared code
+│
+├── docker/                     # Docker infrastructure
+│   ├── docker-compose.yml     # Services definition
+│   ├── .env.example           # Environment template
+│   └── configs/               # Service configs
+│
+├── database/                   # Database files
+│   ├── migrations/            # SQL migrations
+│   └── seeds/                 # Seed data
+│
+├── docs/                       # Documentation
+│   ├── 00-planning/           # Project planning
+│   ├── 01-database/           # Database design
+│   └── 02-infrastructure/     # Infrastructure docs
+│
+└── scripts/                    # Utility scripts
 ```
 
-## Run tasks
+---
 
-To build the library use:
+## 🚀 Quick Start
 
-```sh
-npx nx build pkg1
+### Prerequisites
+- Docker 24.0+
+- Docker Compose 2.0+
+- Node.js 20 LTS
+- 8GB+ RAM, 20GB+ disk space
+
+### Installation
+
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd blog-video-platform
 ```
 
-To run any task with Nx use:
+2. **Setup environment**
+```bash
+# Copy environment template
+cp docker/.env.example docker/.env
 
-```sh
-npx nx <target> <project-name>
+# Edit passwords (IMPORTANT!)
+nano docker/.env
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+3. **Start infrastructure**
+```bash
+# Using Makefile
+make start
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Versioning and releasing
-
-To version and release the library use
-
-```
-npx nx release
+# Or using docker compose directly
+docker compose -f docker/docker-compose.yml up -d
 ```
 
-Pass `--dry-run` to see what would happen without actually releasing the library.
-
-[Learn more about Nx release &raquo;](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Keep TypeScript project references up to date
-
-Nx automatically updates TypeScript [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) in `tsconfig.json` files to ensure they remain accurate based on your project dependencies (`import` or `require` statements). This sync is automatically done when running tasks such as `build` or `typecheck`, which require updated references to function correctly.
-
-To manually trigger the process to sync the project graph dependencies information to the TypeScript project references, run the following command:
-
-```sh
-npx nx sync
+4. **Verify services**
+```bash
+make status
+make health
 ```
 
-You can enforce that the TypeScript project references are always in the correct state when running in CI by adding a step to your CI job configuration that runs the following command:
+5. **Access services**
+- MinIO Console: http://localhost:9001
+- API Server: http://localhost:3000 (when implemented)
+- pgAdmin: http://localhost:5050 (with `make tools`)
 
-```sh
-npx nx sync:check
+---
+
+## 💻 Development
+
+### Available Commands
+
+```bash
+# Docker Management
+make start          # Start all services
+make stop           # Stop all services
+make restart        # Restart services
+make status         # Show service status
+make logs           # View all logs
+make health         # Check service health
+
+# Database
+make migrate        # Run migrations
+make backup-db      # Create backup
+make shell-postgres # PostgreSQL shell
+
+# Development
+make shell-api      # API server shell
+make shell-redis    # Redis CLI
+make build          # Build all images
+make clean          # Remove everything
 ```
 
-[Learn more about nx sync](https://nx.dev/reference/nx-commands#sync)
+### Service Ports
 
+| Service | Port | Description |
+|---------|------|-------------|
+| API Server | 3000 | RESTful API |
+| PostgreSQL | 5432 | Database |
+| Redis | 6379 | Cache & Queue |
+| MinIO API | 9000 | Object storage |
+| MinIO Console | 9001 | Web UI |
+| Ollama | 11434 | Local LLM |
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+---
 
-## Install Nx Console
+## 📚 Documentation
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+- [Docker Setup Guide](docs/02-infrastructure/DOCKER_SETUP_GUIDE.md)
+- [Architecture Diagrams](docs/02-infrastructure/DOCKER_ARCHITECTURE_DIAGRAM.md)
+- [Database Design](docs/01-database/)
+- [Project Planning](docs/00-planning/)
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+---
 
-## Useful links
+## 🗺️ Development Roadmap
 
-Learn more:
+### ✅ Completed
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/js?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+**Week 0: Planning & Design**
+- Business analysis (Actors, Use Cases, Business Rules)
+- Database design (16 tables, ERD, migrations)
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+**Week 1 - Day 1-2: Infrastructure**
+- Docker Compose setup (8 services)
+- PostgreSQL + pgvector
+- Redis + BullMQ
+- MinIO storage
+- Ollama AI/LLM
+- Comprehensive documentation
+
+### 🚧 In Progress
+
+**Week 1 - Day 3-4: Nx Monorepo** (Current)
+- Nx Workspace setup
+- Domain entities with Zod
+- Repository interfaces
+- Unit tests
+
+### 📋 Upcoming
+
+**Week 1-3: Foundation** (Weeks 1-3)
+- Authentication with Supabase
+- Core Use Cases
+- API endpoints
+- CI/CD pipeline
+
+**Week 4-6: Core Features**
+- Next.js web frontend
+- Video infrastructure
+- State management with TanStack Query
+
+**Week 7-9: Mobile**
+- React Native app
+- Video upload & playback
+- Advanced features
+
+**Week 10-12: AI & Polish**
+- Semantic search
+- RAG implementation
+- Testing & optimization
+- Deployment
+
+---
+
+## 🔒 Security
+
+- ⚠️ **Change all default passwords** in `docker/.env`
+- ⚠️ **Generate secure JWT secrets** (min 32 characters)
+- ⚠️ **Review security checklist** before production deployment
+
+See [Security Checklist](docs/02-infrastructure/WEEK1_DAY1-2_SUMMARY.md#security-checklist) for details.
+
+---
+
+## 🤝 Contributing
+
+This is a personal project following a structured 12-week development plan. Contributions, suggestions, and feedback are welcome!
+
+---
+
+## 📄 License
+
+[Add your license here]
+
+---
+
+## 👤 Author
+
+**Duy** - Full-stack Developer
+
+---
+
+## 🙏 Acknowledgments
+
+- Anthropic Claude for development assistance
+- Open source community
+- [Add your acknowledgments]
+
+---
+
+**Current Status**: Week 1 - Day 2 Complete ✅ | Next: Nx Monorepo Setup
+
+Last Updated: November 28, 2025

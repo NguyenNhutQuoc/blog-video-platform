@@ -2,7 +2,15 @@
   "name": "@blog-video-platform/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "lint": "nx lint",
+    "format": "nx format:write",
+    "build": "nx build",
+    "test": "nx test",
+    "test:watch": "nx test --watch",
+    "test:cov": "nx test --code-coverage",
+    "type-check": "tsc --noEmit"
+  },
   "private": true,
   "devDependencies": {
     "@eslint/js": "^9.8.0",
