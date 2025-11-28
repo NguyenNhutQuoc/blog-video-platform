@@ -139,6 +139,72 @@ export class PostgresUserRepository implements IUserRepository {
 
     return result?.count ?? 0;
   }
+
+  // =====================================================
+  // ACCOUNT LOCKOUT METHODS
+  // =====================================================
+
+  async lockAccount(userId: string, until: Date): Promise<void> {
+    await this.db
+      .updateTable('users')
+      .set({
+        locked_until: until,
+        updated_at: new Date(),
+      })
+      .where('id', '=', userId)
+      .execute();
+  }
+
+  async unlockAccount(userId: string): Promise<void> {
+    await this.db
+      .updateTable('users')
+      .set({
+        locked_until: null,
+        failed_login_attempts: 0,
+        updated_at: new Date(),
+      })
+      .where('id', '=', userId)
+      .execute();
+  }
+
+  async incrementFailedAttempts(userId: string): Promise<number> {
+    const result = await this.db
+      .updateTable('users')
+      .set((eb) => ({
+        failed_login_attempts: eb('failed_login_attempts', '+', 1),
+        updated_at: new Date(),
+      }))
+      .where('id', '=', userId)
+      .returning('failed_login_attempts')
+      .executeTakeFirst();
+
+    return result?.failed_login_attempts ?? 0;
+  }
+
+  async resetFailedAttempts(userId: string): Promise<void> {
+    await this.db
+      .updateTable('users')
+      .set({
+        failed_login_attempts: 0,
+        locked_until: null,
+        updated_at: new Date(),
+      })
+      .where('id', '=', userId)
+      .execute();
+  }
+
+  async recordSuccessfulLogin(userId: string): Promise<void> {
+    await this.db
+      .updateTable('users')
+      .set({
+        failed_login_attempts: 0,
+        locked_until: null,
+        last_login_at: new Date(),
+        updated_at: new Date(),
+      })
+      .where('id', '=', userId)
+      .execute();
+  }
 }
 
 /**

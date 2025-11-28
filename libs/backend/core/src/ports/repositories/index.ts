@@ -38,3 +38,19 @@ export type {
   VideoQueryOptions,
 } from './video.repository.interface.js';
 export type { ISessionRepository } from './session.repository.interface.js';
+export type {
+  IEmailVerificationTokenRepository,
+  EmailVerificationToken,
+  CreateEmailVerificationTokenInput,
+} from './email-verification-token.repository.interface.js';
+export type {
+  IPasswordResetTokenRepository,
+  PasswordResetToken,
+  CreatePasswordResetTokenInput,
+} from './password-reset-token.repository.interface.js';
+export type {
+  ILoginAttemptRepository,
+  LoginAttempt,
+  CreateLoginAttemptInput,
+  LoginAttemptStats,
+} from './login-attempt.repository.interface.js';

@@ -8,3 +8,11 @@ export type {
   TokenPayload,
   TokenPair,
 } from './token-generator.interface.js';
+export type {
+  IEmailService,
+  EmailOptions,
+  SendEmailResult,
+  VerificationEmailData,
+  PasswordResetEmailData,
+  WelcomeEmailData,
+} from './email.service.interface.js';

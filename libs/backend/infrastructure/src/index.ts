@@ -6,6 +6,9 @@ export * from './database/index.js';
 // Auth
 export * from './auth/index.js';
 
+// Email
+export * from './email/index.js';
+
 // Mappers
 export * from './mappers/index.js';
 

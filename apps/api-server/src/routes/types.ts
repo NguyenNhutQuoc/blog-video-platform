@@ -10,6 +10,10 @@ import type {
   IVideoRepository,
   IPasswordHasher,
   ITokenGenerator,
+  IEmailVerificationTokenRepository,
+  IPasswordResetTokenRepository,
+  ILoginAttemptRepository,
+  IEmailService,
 } from '@blog/backend/core';
 
 export interface AuthRoutesDependencies {
@@ -18,6 +22,12 @@ export interface AuthRoutesDependencies {
   passwordHasher: IPasswordHasher;
   tokenGenerator: ITokenGenerator;
   authMiddleware: RequestHandler;
+  // Optional - for email verification & password reset
+  emailVerificationTokenRepository?: IEmailVerificationTokenRepository;
+  passwordResetTokenRepository?: IPasswordResetTokenRepository;
+  loginAttemptRepository?: ILoginAttemptRepository;
+  emailService?: IEmailService;
+  appUrl?: string;
 }
 
 export interface PostRoutesDependencies {

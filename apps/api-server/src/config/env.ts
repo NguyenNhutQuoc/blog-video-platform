@@ -28,6 +28,10 @@ const EnvSchema = z.object({
   PORT: z.string().default('3000').transform(Number),
   HOST: z.string().default('localhost'),
 
+  // Application
+  APP_URL: z.string().default('http://localhost:3000'),
+  APP_NAME: z.string().default('Blog Video Platform'),
+
   // Logging
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
@@ -50,12 +54,33 @@ const EnvSchema = z.object({
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
 
+  // Email / SMTP Configuration
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.string().default('587').transform(Number),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_SECURE: z
+    .string()
+    .default('false')
+    .transform((val) => val === 'true'),
+  EMAIL_FROM_ADDRESS: z.string().email().optional(),
+  EMAIL_FROM_NAME: z.string().optional(),
+  // Use Ethereal for development (auto-generates test account)
+  USE_ETHEREAL: z
+    .string()
+    .default('false')
+    .transform((val) => val === 'true'),
+
   // CORS
   CORS_ORIGIN: z.string().default('http://localhost:3001'),
 
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: z.string().default('900000').transform(Number), // 15 minutes
   RATE_LIMIT_MAX: z.string().default('100').transform(Number),
+
+  // Account Lockout
+  ACCOUNT_LOCKOUT_THRESHOLD: z.string().default('5').transform(Number),
+  ACCOUNT_LOCKOUT_DURATION_MINUTES: z.string().default('15').transform(Number),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

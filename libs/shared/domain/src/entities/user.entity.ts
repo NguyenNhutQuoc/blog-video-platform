@@ -36,7 +36,7 @@ const EmailSchema = z
  * - Min 8 characters
  * - At least 1 uppercase, 1 lowercase, 1 number, 1 special char
  */
-const PasswordSchema = z
+export const PasswordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
   .regex(
@@ -74,6 +74,11 @@ export const UserSchema = z.object({
   isActive: z.boolean().default(true),
   isAdmin: z.boolean().default(false),
   spamScore: SpamScoreSchema,
+  // Account lockout fields
+  failedLoginAttempts: z.number().int().min(0).default(0),
+  lockedUntil: z.date().nullable().default(null),
+  lastLoginAt: z.date().nullable().default(null),
+  passwordChangedAt: z.date().nullable().default(null),
   createdAt: z.date(),
   updatedAt: z.date(),
   deletedAt: z.date().nullable().default(null),
@@ -183,6 +188,22 @@ export class UserEntity {
     return this.props.spamScore >= 5;
   }
 
+  get failedLoginAttempts(): number {
+    return this.props.failedLoginAttempts;
+  }
+
+  get lockedUntil(): Date | null {
+    return this.props.lockedUntil;
+  }
+
+  get lastLoginAt(): Date | null {
+    return this.props.lastLoginAt;
+  }
+
+  get passwordChangedAt(): Date | null {
+    return this.props.passwordChangedAt;
+  }
+
   // Factory method
   static create(data: UserCreate): UserEntity {
     const now = new Date();
@@ -200,6 +221,10 @@ export class UserEntity {
       isActive: data.isActive ?? true,
       isAdmin: data.isAdmin ?? false,
       spamScore: data.spamScore ?? 0,
+      failedLoginAttempts: data.failedLoginAttempts ?? 0,
+      lockedUntil: data.lockedUntil ?? null,
+      lastLoginAt: data.lastLoginAt ?? null,
+      passwordChangedAt: data.passwordChangedAt ?? null,
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
@@ -241,11 +266,80 @@ export class UserEntity {
     return this.props.spamScore >= 5;
   }
 
+  // =====================================================
+  // ACCOUNT LOCKOUT METHODS
+  // =====================================================
+
+  /**
+   * Check if account is currently locked
+   */
+  isLocked(): boolean {
+    if (!this.props.lockedUntil) {
+      return false;
+    }
+    return new Date() < this.props.lockedUntil;
+  }
+
+  /**
+   * Get remaining lockout time in minutes (0 if not locked)
+   */
+  getRemainingLockoutMinutes(): number {
+    if (!this.props.lockedUntil) {
+      return 0;
+    }
+    const remaining = this.props.lockedUntil.getTime() - Date.now();
+    return remaining > 0 ? Math.ceil(remaining / (60 * 1000)) : 0;
+  }
+
+  /**
+   * Record a failed login attempt
+   */
+  recordFailedLogin(): void {
+    this.props.failedLoginAttempts += 1;
+    this.props.updatedAt = new Date();
+  }
+
+  /**
+   * Lock the account until a specific date
+   */
+  lockAccount(until: Date): void {
+    this.props.lockedUntil = until;
+    this.props.updatedAt = new Date();
+  }
+
+  /**
+   * Unlock the account and reset failed attempts
+   */
+  unlockAccount(): void {
+    this.props.lockedUntil = null;
+    this.props.failedLoginAttempts = 0;
+    this.props.updatedAt = new Date();
+  }
+
+  /**
+   * Record a successful login (resets failed attempts, updates lastLoginAt)
+   */
+  recordSuccessfulLogin(): void {
+    this.props.failedLoginAttempts = 0;
+    this.props.lockedUntil = null;
+    this.props.lastLoginAt = new Date();
+    this.props.updatedAt = new Date();
+  }
+
   /**
    * Verify email
    */
   verifyEmail(): void {
     this.props.emailVerified = true;
+    this.props.updatedAt = new Date();
+  }
+
+  /**
+   * Change password (with pre-hashed password)
+   */
+  changePassword(newPasswordHash: string): void {
+    this.props.passwordHash = newPasswordHash;
+    this.props.passwordChangedAt = new Date();
     this.props.updatedAt = new Date();
   }
 

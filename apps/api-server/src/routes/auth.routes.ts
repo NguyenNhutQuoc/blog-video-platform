@@ -12,9 +12,25 @@ import {
   RefreshTokenUseCase,
   LogoutUserUseCase,
   LogoutAllUseCase,
+  VerifyEmailUseCase,
+  ResendVerificationUseCase,
+  ForgotPasswordUseCase,
+  ResetPasswordUseCase,
 } from '@blog/backend/core';
 import { asyncHandler, createError } from '../middleware/error.middleware.js';
+import {
+  createLoginRateLimiter,
+  createRegisterRateLimiter,
+  createPasswordResetRateLimiter,
+  createResendVerificationRateLimiter,
+} from '../middleware/rate-limit.middleware.js';
 import type { AuthRoutesDependencies } from './types.js';
+
+// Create rate limiters
+const loginLimiter = createLoginRateLimiter();
+const registerLimiter = createRegisterRateLimiter();
+const passwordResetLimiter = createPasswordResetRateLimiter();
+const resendVerificationLimiter = createResendVerificationRateLimiter();
 
 export function createAuthRoutes(deps: AuthRoutesDependencies): Router {
   const router = Router();
@@ -95,6 +111,7 @@ export function createAuthRoutes(deps: AuthRoutesDependencies): Router {
    */
   router.post(
     '/register',
+    registerLimiter,
     asyncHandler(async (req: Request, res: Response) => {
       const result = await registerUseCase.execute({
         email: req.body.email,
@@ -167,6 +184,7 @@ export function createAuthRoutes(deps: AuthRoutesDependencies): Router {
    */
   router.post(
     '/login',
+    loginLimiter,
     asyncHandler(async (req: Request, res: Response) => {
       const result = await loginUseCase.execute({
         email: req.body.email,
@@ -427,6 +445,234 @@ export function createAuthRoutes(deps: AuthRoutesDependencies): Router {
       });
     })
   );
+
+  // ============================================
+  // Email Verification & Password Reset Routes
+  // ============================================
+
+  // Only register these routes if dependencies are provided
+  if (
+    deps.emailVerificationTokenRepository &&
+    deps.passwordResetTokenRepository &&
+    deps.emailService &&
+    deps.appUrl
+  ) {
+    const verifyEmailUseCase = new VerifyEmailUseCase({
+      userRepository: deps.userRepository,
+      emailVerificationTokenRepository: deps.emailVerificationTokenRepository,
+      emailService: deps.emailService,
+    });
+
+    const resendVerificationUseCase = new ResendVerificationUseCase({
+      userRepository: deps.userRepository,
+      emailVerificationTokenRepository: deps.emailVerificationTokenRepository,
+      emailService: deps.emailService,
+    });
+
+    const forgotPasswordUseCase = new ForgotPasswordUseCase({
+      userRepository: deps.userRepository,
+      passwordResetTokenRepository: deps.passwordResetTokenRepository,
+      emailService: deps.emailService,
+    });
+
+    const resetPasswordUseCase = new ResetPasswordUseCase({
+      userRepository: deps.userRepository,
+      passwordResetTokenRepository: deps.passwordResetTokenRepository,
+      sessionRepository: deps.sessionRepository,
+      passwordHasher: deps.passwordHasher,
+    });
+
+    /**
+     * @openapi
+     * /api/auth/verify-email:
+     *   post:
+     *     summary: Verify email address
+     *     description: Verifies user email using the token sent via email
+     *     tags: [Authentication]
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - token
+     *             properties:
+     *               token:
+     *                 type: string
+     *                 description: Email verification token
+     *     responses:
+     *       200:
+     *         description: Email verified successfully
+     *       400:
+     *         description: Invalid or expired token
+     */
+    router.post(
+      '/verify-email',
+      asyncHandler(async (req: Request, res: Response) => {
+        const result = await verifyEmailUseCase.execute({
+          token: req.body.token,
+        });
+
+        if (!result.success) {
+          throw createError(
+            result.error.message,
+            result.error.code === 'USER_NOT_FOUND' ? 404 : 400,
+            result.error.code
+          );
+        }
+
+        res.json({
+          success: true,
+          data: result.data,
+        });
+      })
+    );
+
+    /**
+     * @openapi
+     * /api/auth/resend-verification:
+     *   post:
+     *     summary: Resend verification email
+     *     description: Sends a new verification email to the user
+     *     tags: [Authentication]
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - email
+     *             properties:
+     *               email:
+     *                 type: string
+     *                 format: email
+     *     responses:
+     *       200:
+     *         description: Verification email sent (if account exists)
+     *       429:
+     *         description: Too many requests
+     */
+    router.post(
+      '/resend-verification',
+      resendVerificationLimiter,
+      asyncHandler(async (req: Request, res: Response) => {
+        const result = await resendVerificationUseCase.execute({
+          email: req.body.email,
+          appUrl: deps.appUrl!,
+        });
+
+        if (!result.success) {
+          throw createError(result.error.message, 500, result.error.code);
+        }
+
+        res.json({
+          success: true,
+          data: result.data,
+        });
+      })
+    );
+
+    /**
+     * @openapi
+     * /api/auth/forgot-password:
+     *   post:
+     *     summary: Request password reset
+     *     description: Sends a password reset email to the user
+     *     tags: [Authentication]
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - email
+     *             properties:
+     *               email:
+     *                 type: string
+     *                 format: email
+     *     responses:
+     *       200:
+     *         description: Password reset email sent (if account exists)
+     *       429:
+     *         description: Too many requests
+     */
+    router.post(
+      '/forgot-password',
+      passwordResetLimiter,
+      asyncHandler(async (req: Request, res: Response) => {
+        const result = await forgotPasswordUseCase.execute({
+          email: req.body.email,
+          appUrl: deps.appUrl!,
+        });
+
+        if (!result.success) {
+          throw createError(result.error.message, 500, result.error.code);
+        }
+
+        res.json({
+          success: true,
+          data: result.data,
+        });
+      })
+    );
+
+    /**
+     * @openapi
+     * /api/auth/reset-password:
+     *   post:
+     *     summary: Reset password with token
+     *     description: Resets the user password using a valid reset token
+     *     tags: [Authentication]
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - token
+     *               - newPassword
+     *             properties:
+     *               token:
+     *                 type: string
+     *                 description: Password reset token
+     *               newPassword:
+     *                 type: string
+     *                 format: password
+     *                 minLength: 8
+     *     responses:
+     *       200:
+     *         description: Password reset successfully
+     *       400:
+     *         description: Invalid token or password
+     */
+    router.post(
+      '/reset-password',
+      asyncHandler(async (req: Request, res: Response) => {
+        const result = await resetPasswordUseCase.execute({
+          token: req.body.token,
+          newPassword: req.body.newPassword,
+        });
+
+        if (!result.success) {
+          throw createError(
+            result.error.message,
+            result.error.code === 'VALIDATION_ERROR' ? 400 : 400,
+            result.error.code,
+            result.error.details
+          );
+        }
+
+        res.json({
+          success: true,
+          data: result.data,
+        });
+      })
+    );
+  }
 
   return router;
 }

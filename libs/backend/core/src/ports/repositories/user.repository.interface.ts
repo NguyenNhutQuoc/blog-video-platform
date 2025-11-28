@@ -57,6 +57,35 @@ export interface IUserRepository {
    * Count total active users
    */
   countActive(): Promise<number>;
+
+  // =====================================================
+  // ACCOUNT LOCKOUT METHODS
+  // =====================================================
+
+  /**
+   * Lock a user account until a specified date
+   */
+  lockAccount(userId: string, until: Date): Promise<void>;
+
+  /**
+   * Unlock a user account and reset failed login attempts
+   */
+  unlockAccount(userId: string): Promise<void>;
+
+  /**
+   * Increment failed login attempts for a user
+   */
+  incrementFailedAttempts(userId: string): Promise<number>;
+
+  /**
+   * Reset failed login attempts (on successful login)
+   */
+  resetFailedAttempts(userId: string): Promise<void>;
+
+  /**
+   * Record successful login (update lastLoginAt, reset failed attempts)
+   */
+  recordSuccessfulLogin(userId: string): Promise<void>;
 }
 
 /**

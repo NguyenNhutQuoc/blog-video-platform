@@ -57,6 +57,15 @@ export interface UsersTable {
   is_active: ColumnType<boolean, boolean | undefined, boolean>;
   is_admin: ColumnType<boolean, boolean | undefined, boolean>;
   spam_score: ColumnType<number, number | undefined, number>;
+  // Account lockout fields
+  failed_login_attempts: ColumnType<number, number | undefined, number>;
+  locked_until: ColumnType<Date | null, Date | null | undefined, Date | null>;
+  last_login_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+  password_changed_at: ColumnType<
+    Date | null,
+    Date | null | undefined,
+    Date | null
+  >;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
   deleted_at: DeletedAt;
