@@ -41,7 +41,6 @@ export interface EmailServiceConfig {
 export class EmailService implements IEmailService {
   private transporter: Transporter | null = null;
   private config: EmailServiceConfig;
-  private etherealAccount: { user: string; pass: string } | null = null;
 
   constructor(config: EmailServiceConfig) {
     this.config = config;
@@ -54,10 +53,6 @@ export class EmailService implements IEmailService {
     if (this.config.useEthereal) {
       // Create Ethereal test account for development
       const testAccount = await nodemailer.createTestAccount();
-      this.etherealAccount = {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      };
 
       this.transporter = nodemailer.createTransport({
         host: 'smtp.ethereal.email',

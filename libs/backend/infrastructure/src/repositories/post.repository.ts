@@ -74,14 +74,16 @@ export class PostgresPostRepository implements IPostRepository {
 
     const orderBy = options?.orderBy ?? 'createdAt';
     const orderDir = options?.orderDir ?? 'desc';
-    const columnMap: Record<string, string> = {
-      createdAt: 'created_at',
-      updatedAt: 'updated_at',
-      publishedAt: 'published_at',
-      viewCount: 'view_count',
-      likeCount: 'like_count',
-    };
-    query = query.orderBy(columnMap[orderBy] ?? 'created_at', orderDir);
+    const columnMap = {
+      createdAt: 'posts.created_at',
+      updatedAt: 'posts.updated_at',
+      publishedAt: 'posts.published_at',
+      viewCount: 'posts.view_count',
+      likeCount: 'posts.like_count',
+    } as const;
+    const column =
+      columnMap[orderBy as keyof typeof columnMap] ?? 'posts.created_at';
+    query = query.orderBy((eb) => eb.ref(column), orderDir);
 
     if (options?.limit) {
       query = query.limit(options.limit);
@@ -104,12 +106,14 @@ export class PostgresPostRepository implements IPostRepository {
 
     const orderBy = options?.orderBy ?? 'publishedAt';
     const orderDir = options?.orderDir ?? 'desc';
-    const columnMap: Record<string, string> = {
-      publishedAt: 'published_at',
-      viewCount: 'view_count',
-      likeCount: 'like_count',
-    };
-    query = query.orderBy(columnMap[orderBy] ?? 'published_at', orderDir);
+    const columnMap = {
+      publishedAt: 'posts.published_at',
+      viewCount: 'posts.view_count',
+      likeCount: 'posts.like_count',
+    } as const;
+    const column =
+      columnMap[orderBy as keyof typeof columnMap] ?? 'posts.published_at';
+    query = query.orderBy((eb) => eb.ref(column), orderDir);
 
     if (options?.cursor) {
       // Cursor-based pagination
@@ -200,7 +204,7 @@ export class PostgresPostRepository implements IPostRepository {
   }
 
   async searchSemantic(
-    embedding: number[],
+    _embedding: number[],
     options?: PostSearchOptions
   ): Promise<PostEntity[]> {
     // Vector similarity search using pgvector

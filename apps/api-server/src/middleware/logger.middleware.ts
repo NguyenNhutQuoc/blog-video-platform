@@ -6,7 +6,7 @@
  */
 
 import { pinoHttp, type HttpLogger } from 'pino-http';
-import pino from 'pino';
+import pino, { type Logger as PinoLogger } from 'pino';
 import type { Request, Response } from 'express';
 import crypto from 'crypto';
 
@@ -28,7 +28,11 @@ function generateRequestId(): string {
 /**
  * Create the pino logger instance
  */
-export function createLogger(config: LoggerConfig) {
+export function createLogger(
+  config: LoggerConfig
+): PinoLogger<
+  'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent'
+> {
   const transport = config.prettyPrint
     ? {
         target: 'pino-pretty',
@@ -40,7 +44,9 @@ export function createLogger(config: LoggerConfig) {
       }
     : undefined;
 
-  return pino({
+  return pino<
+    'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent'
+  >({
     level: config.level,
     enabled: config.enabled,
     transport,
@@ -50,10 +56,12 @@ export function createLogger(config: LoggerConfig) {
 /**
  * Create HTTP logger middleware
  */
-export function createHttpLogger(config: LoggerConfig): HttpLogger {
+export function createHttpLogger(
+  config: LoggerConfig
+): HttpLogger<Request, Response, LogLevel | 'silent'> {
   const logger = createLogger(config);
 
-  return pinoHttp({
+  return pinoHttp<Request, Response, LogLevel | 'silent'>({
     logger,
     // Generate unique request ID
     genReqId: (req: Request) => {

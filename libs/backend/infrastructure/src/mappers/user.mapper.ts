@@ -9,6 +9,22 @@
 import type { UserRow, NewUser, UserUpdate } from '../database/types.js';
 import { UserEntity, type User } from '@blog/shared/domain';
 
+function sanitizeSocialLinks(
+  links?: Record<string, unknown> | null
+): Record<string, string> {
+  if (!links) {
+    return {};
+  }
+
+  const sanitized: Record<string, string> = {};
+  for (const [key, value] of Object.entries(links)) {
+    if (typeof value === 'string') {
+      sanitized[key] = value;
+    }
+  }
+  return sanitized;
+}
+
 /**
  * Map database row to domain entity
  */
@@ -21,7 +37,9 @@ export function toDomainUser(row: UserRow): UserEntity {
     fullName: row.full_name ?? null,
     bio: row.bio ?? null,
     avatarUrl: row.avatar_url ?? null,
-    socialLinks: (row.social_links as Record<string, string>) ?? {},
+    socialLinks: sanitizeSocialLinks(
+      row.social_links as Record<string, unknown>
+    ),
     emailVerified: row.email_verified,
     isActive: row.is_active,
     isAdmin: row.is_admin,
@@ -51,7 +69,7 @@ export function toNewUserRow(entity: UserEntity): NewUser {
     full_name: data.fullName,
     bio: data.bio,
     avatar_url: data.avatarUrl,
-    social_links: data.socialLinks,
+    social_links: sanitizeSocialLinks(data.socialLinks),
     email_verified: data.emailVerified,
     is_active: data.isActive,
     is_admin: data.isAdmin,
@@ -78,7 +96,7 @@ export function toUserUpdateRow(entity: UserEntity): UserUpdate {
     full_name: data.fullName,
     bio: data.bio,
     avatar_url: data.avatarUrl,
-    social_links: data.socialLinks,
+    social_links: sanitizeSocialLinks(data.socialLinks),
     email_verified: data.emailVerified,
     is_active: data.isActive,
     is_admin: data.isAdmin,
