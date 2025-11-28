@@ -146,7 +146,8 @@ export function createResendVerificationRateLimiter(
     max: passwordResetMax,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req: Request) => `resend-verification:${normalizeClientIp(req)}`,
+    keyGenerator: (req: Request) =>
+      `resend-verification:${normalizeClientIp(req)}`,
     handler: (_req: Request, res: Response) => {
       res.status(429).json({
         success: false,
