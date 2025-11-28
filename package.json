@@ -42,7 +42,8 @@
   "workspaces": [
     "packages/*",
     "libs/*",
-    "libs/shared/*"
+    "libs/shared/*",
+    "libs/backend/*"
   ],
   "dependencies": {
     "type-fest": "^5.2.0",

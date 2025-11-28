@@ -20,6 +20,15 @@
     },
     {
       "path": "./libs/shared/domain"
+    },
+    {
+      "path": "./libs/backend/core"
+    },
+    {
+      "path": "./libs/backend/core"
+    },
+    {
+      "path": "./libs/backend/infrastructure"
     }
   ]
 }
