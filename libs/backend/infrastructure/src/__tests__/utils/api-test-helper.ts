@@ -17,7 +17,7 @@ import type {
   ISessionRepository,
   IPasswordHasher,
   ITokenGenerator,
-} from '@blog/backend/core';
+} from '@blog-video-platform/core';
 
 /**
  * Test JWT configuration

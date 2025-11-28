@@ -4,8 +4,15 @@
  * Provides stricter rate limiting for auth endpoints to prevent brute force attacks.
  */
 
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import type { Request, Response } from 'express';
+
+/**
+ * Normalize IP addresses (including IPv6) using the helper provided by express-rate-limit
+ */
+function normalizeClientIp(req: Request): string {
+  return ipKeyGenerator(req.ip ?? '0.0.0.0');
+}
 
 /**
  * Rate limit configuration for auth endpoints
@@ -50,7 +57,7 @@ export function createLoginRateLimiter(config: AuthRateLimitConfig = {}) {
     keyGenerator: (req: Request) => {
       // Use IP + email for more granular limiting
       const email = req.body?.email?.toLowerCase() || '';
-      return `login:${req.ip}:${email}`;
+      return `login:${normalizeClientIp(req)}:${email}`;
     },
     handler: (_req: Request, res: Response) => {
       res.status(429).json({
@@ -78,7 +85,7 @@ export function createRegisterRateLimiter(config: AuthRateLimitConfig = {}) {
     max: registerMax,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req: Request) => `register:${req.ip}`,
+    keyGenerator: (req: Request) => `register:${normalizeClientIp(req)}`,
     handler: (_req: Request, res: Response) => {
       res.status(429).json({
         success: false,
@@ -109,7 +116,7 @@ export function createPasswordResetRateLimiter(
     legacyHeaders: false,
     keyGenerator: (req: Request) => {
       const email = req.body?.email?.toLowerCase() || '';
-      return `password-reset:${req.ip}:${email}`;
+      return `password-reset:${normalizeClientIp(req)}:${email}`;
     },
     handler: (_req: Request, res: Response) => {
       res.status(429).json({
@@ -139,7 +146,7 @@ export function createResendVerificationRateLimiter(
     max: passwordResetMax,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req: Request) => `resend-verification:${req.ip}`,
+    keyGenerator: (req: Request) => `resend-verification:${normalizeClientIp(req)}`,
     handler: (_req: Request, res: Response) => {
       res.status(429).json({
         success: false,
