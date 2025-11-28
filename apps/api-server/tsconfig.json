@@ -1,0 +1,30 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node", "express"],
+    "paths": {
+      "@blog/shared/domain": ["../../libs/shared/domain/src/index.ts"],
+      "@blog/backend/core": ["../../libs/backend/core/src/index.ts"],
+      "@blog/backend/infrastructure": [
+        "../../libs/backend/infrastructure/src/index.ts"
+      ]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../../libs/backend/infrastructure"
+    },
+    {
+      "path": "../../libs/backend/core"
+    }
+  ],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
+}

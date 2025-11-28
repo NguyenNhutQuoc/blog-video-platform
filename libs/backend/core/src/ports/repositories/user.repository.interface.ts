@@ -1,4 +1,4 @@
-import type { UserEntity } from '../entities/user.entity.js';
+import type { UserEntity } from '@blog/shared/domain';
 
 /**
  * User Repository Interface (Port)

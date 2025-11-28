@@ -1,4 +1,4 @@
-import type { VideoEntity } from '../entities/video.entity.js';
+import type { VideoEntity } from '@blog/shared/domain';
 
 /**
  * Video Repository Interface (Port)

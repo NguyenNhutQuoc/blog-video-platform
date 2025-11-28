@@ -10,10 +10,17 @@
     "moduleResolution": "nodenext",
     "importHelpers": true,
     "noImplicitOverride": true,
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@blog/shared/domain": ["../../shared/domain/src/index.ts"]
+    }
   },
   "include": ["src/**/*.ts"],
-  "references": [],
+  "references": [
+    {
+      "path": "../../shared/domain/tsconfig.lib.json"
+    }
+  ],
   "exclude": [
     "jest.config.ts",
     "jest.config.cts",

@@ -15,6 +15,15 @@
     }
   },
   "dependencies": {
-    "tslib": "^2.3.0"
+    "@blog-video-platform/core": "file:../core",
+    "@blog-video-platform/domain": "file:../../shared/domain",
+    "bcrypt": "^6.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "kysely": "^0.28.8",
+    "pg": "^8.11.0",
+    "@testcontainers/postgresql": "^11.9.0"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "^11.0.0"
   }
 }

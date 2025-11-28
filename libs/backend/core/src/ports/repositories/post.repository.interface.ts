@@ -1,4 +1,4 @@
-import type { PostEntity } from '../entities/post.entity.js';
+import type { PostEntity } from '@blog/shared/domain';
 
 /**
  * Post Repository Interface (Port)

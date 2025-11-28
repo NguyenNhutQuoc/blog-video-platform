@@ -37,3 +37,4 @@ export type {
   IVideoRepository,
   VideoQueryOptions,
 } from './video.repository.interface.js';
+export type { ISessionRepository } from './session.repository.interface.js';

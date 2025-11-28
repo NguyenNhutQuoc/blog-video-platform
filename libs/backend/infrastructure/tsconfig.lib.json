@@ -1,6 +1,7 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "rootDir": "src",
     "outDir": "dist",
@@ -10,10 +11,21 @@
     "moduleResolution": "nodenext",
     "importHelpers": true,
     "noImplicitOverride": true,
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@blog/shared/domain": ["../../shared/domain/src/index.ts"],
+      "@blog/backend/core": ["../core/src/index.ts"]
+    }
   },
   "include": ["src/**/*.ts"],
-  "references": [],
+  "references": [
+    {
+      "path": "../../shared/domain/tsconfig.lib.json"
+    },
+    {
+      "path": "../core/tsconfig.lib.json"
+    }
+  ],
   "exclude": [
     "jest.config.ts",
     "jest.config.cts",

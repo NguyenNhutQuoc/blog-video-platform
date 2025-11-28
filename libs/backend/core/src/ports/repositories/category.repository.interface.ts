@@ -1,4 +1,4 @@
-import type { CategoryEntity } from '../entities/category.entity.js';
+import type { CategoryEntity } from '@blog/shared/domain';
 
 /**
  * Category Repository Interface (Port)

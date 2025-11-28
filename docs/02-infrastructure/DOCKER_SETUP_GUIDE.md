@@ -22,16 +22,19 @@ This guide covers the complete Docker infrastructure setup for the Blog & Video 
 ## 🔧 Prerequisites
 
 ### Required Software:
+
 - **Docker**: Version 24.0+ ([Install Docker](https://docs.docker.com/get-docker/))
 - **Docker Compose**: Version 2.0+ (included with Docker Desktop)
 - **Git**: For cloning the repository
 
 ### System Requirements:
+
 - **RAM**: Minimum 8GB (16GB recommended)
 - **Disk Space**: 20GB free space
 - **CPU**: 4 cores recommended (for video encoding)
 
 ### Verify Installation:
+
 ```bash
 docker --version
 # Docker version 24.0.0 or higher
@@ -45,6 +48,7 @@ docker compose version
 ## 🚀 Quick Start
 
 ### 1. Clone Repository & Setup
+
 ```bash
 # Clone the project
 git clone <repository-url>
@@ -58,6 +62,7 @@ nano .env
 ```
 
 ### 2. Start All Services
+
 ```bash
 # Start infrastructure services
 docker compose up -d
@@ -70,6 +75,7 @@ docker compose ps
 ```
 
 ### 3. Verify Services
+
 ```bash
 # PostgreSQL
 docker compose exec postgres psql -U blog_user -d blog_platform -c "SELECT version();"
@@ -85,11 +91,14 @@ curl http://localhost:11434/api/tags
 ```
 
 ### 4. Access Web Interfaces
+
 - **MinIO Console**: http://localhost:9001
+
   - Username: `minio_admin`
   - Password: `minio_password_change_in_production`
 
 - **pgAdmin** (optional): http://localhost:5050
+
   - Email: `admin@blogplatform.local`
   - Password: `admin_password_change_in_production`
 
@@ -102,6 +111,7 @@ curl http://localhost:11434/api/tags
 ### Core Services (Always Running)
 
 #### 1. **PostgreSQL 16 with pgvector**
+
 - **Port**: 5432
 - **Purpose**: Primary database with vector search support
 - **Volume**: `postgres_data`
@@ -109,12 +119,14 @@ curl http://localhost:11434/api/tags
 - **Auto-migration**: Runs `001_initial_schema.sql` on first start
 
 #### 2. **Redis 7**
+
 - **Port**: 6379
 - **Purpose**: Cache + Job Queue (BullMQ)
 - **Volume**: `redis_data`
 - **Persistence**: AOF enabled
 
 #### 3. **MinIO**
+
 - **API Port**: 9000
 - **Console Port**: 9001
 - **Purpose**: S3-compatible object storage
@@ -122,30 +134,35 @@ curl http://localhost:11434/api/tags
 - **Volume**: `minio_data`
 
 #### 4. **Ollama**
+
 - **Port**: 11434
 - **Purpose**: Local LLM for AI features
 - **Models**: nomic-embed-text, llama3 (auto-pulled)
 - **Volume**: `ollama_data`
 
 #### 5. **API Server**
+
 - **Port**: 3000
 - **Purpose**: RESTful API backend
 - **Tech**: Node.js 20 + TypeScript
 - **Health**: http://localhost:3000/health
 
 #### 6. **Video Worker**
+
 - **Purpose**: FFmpeg video encoding (BullMQ consumer)
 - **Tech**: Node.js 20 + FFmpeg + TypeScript
 - **Temp Volume**: `/tmp/video-processing`
 
 ### Optional Services (profiles: tools)
 
-#### 7. **pgAdmin** 
+#### 7. **pgAdmin**
+
 ```bash
 docker compose --profile tools up -d pgadmin
 ```
 
 #### 8. **Redis Commander**
+
 ```bash
 docker compose --profile tools up -d redis-commander
 ```
@@ -157,11 +174,13 @@ docker compose --profile tools up -d redis-commander
 ### Environment Variables
 
 Create `.env` from `.env.example`:
+
 ```bash
 cp .env.example .env
 ```
 
 **Critical Variables to Change:**
+
 ```env
 # Database
 DATABASE_PASSWORD=your_secure_password_here
@@ -184,30 +203,37 @@ SESSION_SECRET=your_session_secret_here
 ### Docker Compose Profiles
 
 **Default** (no profile):
+
 ```bash
 docker compose up -d
 ```
+
 Starts: postgres, redis, minio, ollama, api-server, video-worker
 
 **With Tools**:
+
 ```bash
 docker compose --profile tools up -d
 ```
+
 Adds: pgadmin, redis-commander
 
 ### Volume Management
 
 **List volumes:**
+
 ```bash
 docker volume ls | grep blog-
 ```
 
 **Inspect volume:**
+
 ```bash
 docker volume inspect blog-postgres-data
 ```
 
 **Backup volume:**
+
 ```bash
 docker run --rm -v blog-postgres-data:/data -v $(pwd):/backup \
   alpine tar czf /backup/postgres-backup-$(date +%Y%m%d).tar.gz /data
@@ -220,21 +246,25 @@ docker run --rm -v blog-postgres-data:/data -v $(pwd):/backup \
 ### Service Management
 
 **Start all services:**
+
 ```bash
 docker compose up -d
 ```
 
 **Stop all services:**
+
 ```bash
 docker compose down
 ```
 
 **Restart specific service:**
+
 ```bash
 docker compose restart api-server
 ```
 
 **Stop and remove volumes:**
+
 ```bash
 docker compose down -v  # ⚠️ Deletes all data!
 ```
@@ -242,11 +272,13 @@ docker compose down -v  # ⚠️ Deletes all data!
 ### Logs
 
 **View all logs:**
+
 ```bash
 docker compose logs -f
 ```
 
 **View specific service:**
+
 ```bash
 docker compose logs -f api-server
 docker compose logs -f video-worker
@@ -254,6 +286,7 @@ docker compose logs -f postgres
 ```
 
 **Last 100 lines:**
+
 ```bash
 docker compose logs --tail=100 api-server
 ```
@@ -261,6 +294,7 @@ docker compose logs --tail=100 api-server
 ### Executing Commands
 
 **PostgreSQL:**
+
 ```bash
 # Connect to psql
 docker compose exec postgres psql -U blog_user -d blog_platform
@@ -273,6 +307,7 @@ docker compose exec postgres pg_dump -U blog_user blog_platform > backup.sql
 ```
 
 **Redis:**
+
 ```bash
 # Connect to redis-cli
 docker compose exec redis redis-cli -a redis_password_change_in_production
@@ -285,6 +320,7 @@ docker compose exec redis redis-cli -a redis_password_change_in_production FLUSH
 ```
 
 **MinIO:**
+
 ```bash
 # Using MinIO Client (mc)
 docker compose exec minio-client mc ls myminio
@@ -294,6 +330,7 @@ docker compose exec minio-client mc ls myminio/videos
 ```
 
 **API Server:**
+
 ```bash
 # Shell access
 docker compose exec api-server sh
@@ -305,17 +342,20 @@ docker compose exec api-server npm run test
 ### Rebuilding Services
 
 **Rebuild after code changes:**
+
 ```bash
 docker compose build api-server
 docker compose up -d api-server
 ```
 
 **Force rebuild (no cache):**
+
 ```bash
 docker compose build --no-cache api-server
 ```
 
 **Rebuild all:**
+
 ```bash
 docker compose build
 docker compose up -d
@@ -332,6 +372,7 @@ docker compose ps
 ```
 
 Output shows health status:
+
 - `healthy`: Service is ready
 - `starting`: Health check in progress
 - `unhealthy`: Service has issues
@@ -363,9 +404,10 @@ curl http://localhost:11434/api/tags
 
 #### 1. Port Already in Use
 
-**Error**: `Bind for 0.0.0.0:5432 failed: port is already allocated`
+**Error**: `Bind for localhost:5432 failed: port is already allocated`
 
 **Solution**:
+
 ```bash
 # Find process using port
 lsof -i :5432
@@ -378,6 +420,7 @@ lsof -i :5432
 **Error**: `Permission denied`
 
 **Solution**:
+
 ```bash
 # Fix permissions
 sudo chown -R $USER:$USER ./volumes
@@ -388,6 +431,7 @@ sudo chown -R $USER:$USER ./volumes
 **Error**: `Cannot allocate memory`
 
 **Solution**:
+
 ```bash
 # Increase Docker memory in Docker Desktop Settings
 # Or prune unused resources:
@@ -399,6 +443,7 @@ docker system prune -a
 **Error**: `connection refused`
 
 **Solution**:
+
 ```bash
 # Wait for health check
 docker compose logs postgres
@@ -415,6 +460,7 @@ docker compose restart postgres
 **Error**: Buckets don't exist
 
 **Solution**:
+
 ```bash
 # Re-run bucket creation
 docker compose up -d minio-client
@@ -428,6 +474,7 @@ docker compose exec minio-client mc mb myminio/videos
 **Error**: Model not found
 
 **Solution**:
+
 ```bash
 # Check ollama logs
 docker compose logs ollama-puller
@@ -440,17 +487,20 @@ docker compose exec ollama ollama pull llama3
 ### Debugging Commands
 
 **Check resource usage:**
+
 ```bash
 docker stats
 ```
 
 **Inspect container:**
+
 ```bash
 docker compose exec api-server sh
 docker compose inspect api-server
 ```
 
 **Network connectivity:**
+
 ```bash
 # Test from one container to another
 docker compose exec api-server ping postgres
@@ -475,6 +525,7 @@ docker compose exec api-server curl http://minio:9000
 ### Performance
 
 1. **Resource limits**:
+
 ```yaml
 services:
   postgres:
@@ -489,6 +540,7 @@ services:
 ```
 
 2. **Database tuning**:
+
 ```yaml
 environment:
   POSTGRES_SHARED_BUFFERS: 2GB
@@ -497,6 +549,7 @@ environment:
 ```
 
 3. **Redis tuning**:
+
 ```yaml
 command: >
   redis-server
@@ -508,6 +561,7 @@ command: >
 ### Monitoring
 
 1. **Prometheus + Grafana**:
+
 ```bash
 # Add to docker-compose.yml
 prometheus:
@@ -525,6 +579,7 @@ grafana:
 ### Backup Strategy
 
 **Automated backups**:
+
 ```bash
 # Add cron job
 0 2 * * * docker compose exec postgres pg_dump -U blog_user blog_platform | gzip > /backups/db-$(date +\%Y\%m\%d).sql.gz
@@ -533,6 +588,7 @@ grafana:
 ### High Availability
 
 For production, consider:
+
 - PostgreSQL replication (primary-replica)
 - Redis Sentinel or Redis Cluster
 - MinIO distributed mode
@@ -565,6 +621,7 @@ After Docker infrastructure is running:
 ---
 
 **Questions or Issues?**
+
 - Check logs: `docker compose logs -f`
 - Review this guide's [Troubleshooting](#troubleshooting) section
 - Open an issue in the project repository

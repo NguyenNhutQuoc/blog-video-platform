@@ -1,6 +1,7 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "outDir": "./out-tsc/jest",
     "types": ["jest", "node"],
     "module": "nodenext",

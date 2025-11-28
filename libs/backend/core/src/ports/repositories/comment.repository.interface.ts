@@ -1,4 +1,4 @@
-import type { CommentEntity } from '../entities/comment.entity.js';
+import type { CommentEntity } from '@blog/shared/domain';
 
 /**
  * Comment Repository Interface (Port)

@@ -319,4 +319,11 @@ export class VideoEntity {
       errorMessage: this.props.errorMessage,
     };
   }
+
+  /**
+   * Serialize to JSON
+   */
+  toJSON(): Video {
+    return { ...this.props };
+  }
 }

@@ -15,8 +15,5 @@ export * from './entities/session.entity.js';
 // Value Objects
 export * from './value-objects/index.js';
 
-// Repository Interfaces
-export * from './repositories/index.js';
-
 // Domain Events
 export * from './events/index.js';

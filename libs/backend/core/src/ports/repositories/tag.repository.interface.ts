@@ -1,4 +1,4 @@
-import type { TagEntity } from '../entities/tag.entity.js';
+import type { TagEntity } from '@blog/shared/domain';
 
 /**
  * Tag Repository Interface (Port)

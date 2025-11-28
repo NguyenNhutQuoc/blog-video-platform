@@ -1,4 +1,4 @@
-version: "3.9"
+version: '3.9'
 
 # =====================================================
 # DOCKER COMPOSE - Blog & Video Platform
@@ -18,12 +18,12 @@ services:
       POSTGRES_USER: blog_user
       POSTGRES_PASSWORD: blog_password_change_in_production
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ../database/migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/001_initial_schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U blog_user -d blog_platform"]
+      test: ['CMD-SHELL', 'pg_isready -U blog_user -d blog_platform']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -39,11 +39,11 @@ services:
     restart: unless-stopped
     command: redis-server --appendonly yes --requirepass redis_password_change_in_production
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -62,12 +62,12 @@ services:
       MINIO_ROOT_USER: minio_admin
       MINIO_ROOT_PASSWORD: minio_password_change_in_production
     ports:
-      - "9000:9000" # API
-      - "9001:9001" # Console
+      - '9000:9000' # API
+      - '9001:9001' # Console
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
       interval: 30s
       timeout: 20s
       retries: 3
@@ -106,13 +106,13 @@ services:
     container_name: blog-ollama
     restart: unless-stopped
     ports:
-      - "11434:11434"
+      - '11434:11434'
     volumes:
       - ollama_data:/root/.ollama
     environment:
-      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_HOST=localhost:11434
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:11434/api/tags']
       interval: 30s
       timeout: 10s
       retries: 5
@@ -159,9 +159,9 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@blogplatform.local
       PGADMIN_DEFAULT_PASSWORD: admin_password_change_in_production
-      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:
-      - "5050:80"
+      - '5050:80'
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     depends_on:
@@ -181,7 +181,7 @@ services:
     environment:
       REDIS_HOSTS: local:redis:6379:0:redis_password_change_in_production
     ports:
-      - "8081:8081"
+      - '8081:8081'
     depends_on:
       - redis
     networks:

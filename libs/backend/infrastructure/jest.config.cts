@@ -1,4 +1,3 @@
-/* eslint-disable */
 const { readFileSync } = require('fs');
 
 // Reading the SWC compilation config for the spec files
@@ -18,4 +17,12 @@ module.exports = {
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: 'test-output/jest/coverage',
+  // Integration tests need longer timeout for container startup
+  testTimeout: 60000,
+  moduleNameMapper: {
+    '^@blog/shared/domain$': '<rootDir>/../../shared/domain/src/index.ts',
+    '^@blog/backend/core$': '<rootDir>/../core/src/index.ts',
+  },
+  // Transform ESM packages
+  transformIgnorePatterns: ['node_modules/(?!(uuid|@testcontainers)/)'],
 };
