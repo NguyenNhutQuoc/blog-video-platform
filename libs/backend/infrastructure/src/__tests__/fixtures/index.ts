@@ -22,6 +22,9 @@ export * from './category.fixture.js';
 // Tag fixtures
 export * from './tag.fixture.js';
 
+// Follow fixtures
+export * from './follow.fixture.js';
+
 /**
  * Reset all counters (call in beforeEach for predictable test data)
  */
@@ -33,6 +36,7 @@ export function resetAllCounters(): void {
   const { resetSessionCounter } = require('./session.fixture.js');
   const { resetCategoryCounter } = require('./category.fixture.js');
   const { resetTagCounter } = require('./tag.fixture.js');
+  const { resetFollowCounter } = require('./follow.fixture.js');
 
   resetUserCounter();
   resetPostCounter();
@@ -40,4 +44,5 @@ export function resetAllCounters(): void {
   resetSessionCounter();
   resetCategoryCounter();
   resetTagCounter();
+  resetFollowCounter();
 }

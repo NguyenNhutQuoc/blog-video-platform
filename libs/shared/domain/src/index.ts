@@ -11,6 +11,7 @@ export * from './entities/like.entity.js';
 export * from './entities/bookmark.entity.js';
 export * from './entities/bookmark-folder.entity.js';
 export * from './entities/session.entity.js';
+export * from './entities/follow.entity.js';
 
 // Value Objects
 export * from './value-objects/index.js';

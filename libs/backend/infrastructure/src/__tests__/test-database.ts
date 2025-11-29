@@ -57,37 +57,44 @@ export async function startTestDatabase(): Promise<{
  * Run database migrations
  */
 async function runMigrations(pool: pg.Pool): Promise<void> {
-  // Read and execute the migration file
-  const migrationPath = path.resolve(
-    process.cwd(),
-    'database/migrations/001_initial_schema.sql'
-  );
+  // List of migration files to run in order
+  const migrationFiles = [
+    'database/migrations/001_initial_schema.sql',
+    'database/migrations/002_security_tokens.sql',
+    'database/migrations/003_follows.sql',
+  ];
 
-  if (fs.existsSync(migrationPath)) {
-    const migration = fs.readFileSync(migrationPath, 'utf-8');
+  for (const migrationFile of migrationFiles) {
+    const migrationPath = path.resolve(process.cwd(), migrationFile);
 
-    // Split by semicolons and execute each statement
-    const statements = migration
-      .split(';')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0 && !s.startsWith('--'));
+    if (fs.existsSync(migrationPath)) {
+      const migration = fs.readFileSync(migrationPath, 'utf-8');
 
-    for (const statement of statements) {
-      try {
-        // Skip extension creation (may not be available in test container)
-        if (statement.includes('CREATE EXTENSION')) {
-          continue;
+      // Split by semicolons and execute each statement
+      const statements = migration
+        .split(';')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && !s.startsWith('--'));
+
+      for (const statement of statements) {
+        try {
+          // Skip extension creation (may not be available in test container)
+          if (statement.includes('CREATE EXTENSION')) {
+            continue;
+          }
+          // Skip vector-related statements
+          if (statement.includes('vector') || statement.includes('ivfflat')) {
+            continue;
+          }
+          await pool.query(statement);
+        } catch (error) {
+          // Ignore errors for optional features
+          console.warn(
+            `Migration statement failed (may be ok): ${
+              (error as Error).message
+            }`
+          );
         }
-        // Skip vector-related statements
-        if (statement.includes('vector') || statement.includes('ivfflat')) {
-          continue;
-        }
-        await pool.query(statement);
-      } catch (error) {
-        // Ignore errors for optional features
-        console.warn(
-          `Migration statement failed (may be ok): ${(error as Error).message}`
-        );
       }
     }
   }
@@ -137,6 +144,7 @@ export async function cleanDatabase(db: Kysely<Database>): Promise<void> {
   await db.deleteFrom('post_categories').execute();
   await db.deleteFrom('videos').execute();
   await db.deleteFrom('posts').execute();
+  await db.deleteFrom('follows').execute();
   await db.deleteFrom('tags').execute();
   await db.deleteFrom('categories').execute();
   await db.deleteFrom('users').execute();

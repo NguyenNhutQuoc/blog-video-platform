@@ -4,10 +4,10 @@
 
 import { loadEnv } from './config/env.js';
 import { createApp } from './app.js';
+import { createContainer } from './container.js';
 import {
   getDatabase,
-  createUserRepository,
-  createSessionRepository,
+  getPool,
   createPasswordHasher,
   createTokenGenerator,
 } from '@blog/backend/infrastructure';
@@ -28,11 +28,12 @@ async function main() {
       password: env.DATABASE_PASSWORD,
     });
 
-    // Verify database connection
+    const pool = getPool();
+    if (!pool) {
+      throw new Error('Database pool not initialized');
+    }
 
-    // Initialize repositories
-    const userRepository = createUserRepository(db);
-    const sessionRepository = createSessionRepository(db);
+    // Verify database connection
 
     // Initialize services
     const passwordHasher = createPasswordHasher();
@@ -41,13 +42,30 @@ async function main() {
       refreshTokenSecret: env.JWT_REFRESH_SECRET ?? env.JWT_SECRET + '-refresh',
     });
 
-    // Create Express app
-    const app = createApp({
+    // Build dependency container
+    const container = createContainer({
+      db,
+      pool,
       env,
-      userRepository,
-      sessionRepository,
       passwordHasher,
       tokenGenerator,
+    });
+
+    // Create Express app
+    const app = createApp({
+      env: container.env,
+      userRepository: container.userRepository,
+      postRepository: container.postRepository,
+      sessionRepository: container.sessionRepository,
+      categoryRepository: container.categoryRepository,
+      tagRepository: container.tagRepository,
+      followRepository: container.followRepository,
+      passwordHasher: container.passwordHasher,
+      tokenGenerator: container.tokenGenerator,
+      emailVerificationTokenRepository:
+        container.emailVerificationTokenRepository,
+      passwordResetTokenRepository: container.passwordResetTokenRepository,
+      emailService: container.emailService,
     });
 
     // Start server

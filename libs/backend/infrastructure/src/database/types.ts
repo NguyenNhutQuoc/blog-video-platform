@@ -284,6 +284,16 @@ export interface SearchQueriesTable {
   created_at: CreatedAt;
 }
 
+/**
+ * Follows table
+ */
+export interface FollowsTable {
+  id: UUID;
+  follower_id: string;
+  following_id: string;
+  created_at: CreatedAt;
+}
+
 // =====================================================
 // DATABASE SCHEMA
 // =====================================================
@@ -308,6 +318,7 @@ export interface Database {
   video_views: VideoViewsTable;
   activity_logs: ActivityLogsTable;
   search_queries: SearchQueriesTable;
+  follows: FollowsTable;
 }
 
 // =====================================================
@@ -366,3 +377,7 @@ export type SessionUpdate = Updateable<SessionsTable>;
 // Activity Logs
 export type ActivityLogRow = Selectable<ActivityLogsTable>;
 export type NewActivityLog = Insertable<ActivityLogsTable>;
+
+// Follows
+export type FollowRow = Selectable<FollowsTable>;
+export type NewFollow = Insertable<FollowsTable>;

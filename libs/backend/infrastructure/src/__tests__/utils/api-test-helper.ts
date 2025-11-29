@@ -10,11 +10,19 @@ import type { Kysely } from 'kysely';
 import type { Database } from '../../database/types.js';
 import { PostgresUserRepository } from '../../repositories/user.repository.js';
 import { PostgresSessionRepository } from '../../repositories/session.repository.js';
+import { PostgresPostRepository } from '../../repositories/post.repository.js';
+import { PostgresCategoryRepository } from '../../repositories/category.repository.js';
+import { PostgresTagRepository } from '../../repositories/tag.repository.js';
+import { PostgresFollowRepository } from '../../repositories/follow.repository.js';
 import { BcryptPasswordHasher } from '../../auth/password-hasher.js';
 import { JwtTokenGenerator } from '../../auth/token-generator.js';
 import type {
   IUserRepository,
   ISessionRepository,
+  IPostRepository,
+  ICategoryRepository,
+  ITagRepository,
+  IFollowRepository,
   IPasswordHasher,
   ITokenGenerator,
 } from '@blog-video-platform/core';
@@ -60,6 +68,10 @@ export interface TestDependencies {
   db: Kysely<Database>;
   userRepository: IUserRepository;
   sessionRepository: ISessionRepository;
+  postRepository: IPostRepository;
+  categoryRepository: ICategoryRepository;
+  tagRepository: ITagRepository;
+  followRepository: IFollowRepository;
   passwordHasher: IPasswordHasher;
   tokenGenerator: ITokenGenerator;
 }
@@ -70,6 +82,10 @@ export interface TestDependencies {
 export function createTestDependencies(db: Kysely<Database>): TestDependencies {
   const userRepository = new PostgresUserRepository(db);
   const sessionRepository = new PostgresSessionRepository(db);
+  const postRepository = new PostgresPostRepository(db);
+  const categoryRepository = new PostgresCategoryRepository(db);
+  const tagRepository = new PostgresTagRepository(db);
+  const followRepository = new PostgresFollowRepository(db);
   const passwordHasher = new BcryptPasswordHasher();
   const tokenGenerator = new JwtTokenGenerator(TEST_JWT_CONFIG);
 
@@ -77,6 +93,10 @@ export function createTestDependencies(db: Kysely<Database>): TestDependencies {
     db,
     userRepository,
     sessionRepository,
+    postRepository,
+    categoryRepository,
+    tagRepository,
+    followRepository,
     passwordHasher,
     tokenGenerator,
   };

@@ -39,6 +39,10 @@ export type {
 } from './video.repository.interface.js';
 export type { ISessionRepository } from './session.repository.interface.js';
 export type {
+  IFollowRepository,
+  FollowQueryOptions,
+} from './follow.repository.interface.js';
+export type {
   IEmailVerificationTokenRepository,
   EmailVerificationToken,
   CreateEmailVerificationTokenInput,

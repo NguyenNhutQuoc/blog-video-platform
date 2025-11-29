@@ -83,3 +83,13 @@ export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
 
   next();
 }
+
+/**
+ * Create optional authentication middleware
+ * Does not reject if no token is present, but still validates if one is
+ */
+export function createOptionalAuthMiddleware(
+  options: Omit<AuthMiddlewareOptions, 'optional'>
+) {
+  return createAuthMiddleware({ ...options, optional: true });
+}

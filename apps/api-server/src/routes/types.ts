@@ -8,6 +8,9 @@ import type {
   ISessionRepository,
   IPostRepository,
   IVideoRepository,
+  ICategoryRepository,
+  ITagRepository,
+  IFollowRepository,
   IPasswordHasher,
   ITokenGenerator,
   IEmailVerificationTokenRepository,
@@ -33,7 +36,25 @@ export interface AuthRoutesDependencies {
 export interface PostRoutesDependencies {
   postRepository: IPostRepository;
   userRepository: IUserRepository;
+  categoryRepository: ICategoryRepository;
+  tagRepository: ITagRepository;
   authMiddleware: RequestHandler;
+  optionalAuthMiddleware: RequestHandler;
+}
+
+export interface UserRoutesDependencies {
+  userRepository: IUserRepository;
+  postRepository: IPostRepository;
+  followRepository: IFollowRepository;
+  authMiddleware: RequestHandler;
+  optionalAuthMiddleware: RequestHandler;
+}
+
+export interface FollowRoutesDependencies {
+  followRepository: IFollowRepository;
+  userRepository: IUserRepository;
+  authMiddleware: RequestHandler;
+  optionalAuthMiddleware: RequestHandler;
 }
 
 export interface VideoRoutesDependencies {

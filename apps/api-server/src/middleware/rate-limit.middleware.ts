@@ -31,7 +31,7 @@ export interface AuthRateLimitConfig {
 }
 
 const defaultConfig: Required<AuthRateLimitConfig> = {
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 1 * 60 * 1000, // 1 minute
   loginMax: 5,
   registerMax: 3,
   passwordResetMax: 3,

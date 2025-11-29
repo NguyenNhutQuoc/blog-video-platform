@@ -8,9 +8,10 @@
       "executor": "@nx/js:tsc",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/apps/api-server",
+        "outputPath": "tmp/apps/api-server/build",
         "main": "apps/api-server/src/main.ts",
         "tsConfig": "apps/api-server/tsconfig.json",
+        "rootDir": ".",
         "assets": []
       }
     },

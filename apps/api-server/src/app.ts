@@ -14,25 +14,46 @@ import {
   errorHandler,
   notFoundHandler,
 } from './middleware/error.middleware.js';
-import { createAuthMiddleware } from './middleware/auth.middleware.js';
+import {
+  createAuthMiddleware,
+  createOptionalAuthMiddleware,
+} from './middleware/auth.middleware.js';
 import {
   createHttpLogger,
   createLoggerConfig,
 } from './middleware/logger.middleware.js';
 import { createAuthRoutes } from './routes/auth.routes.js';
+import { createPostsRoutes } from './routes/posts.routes.js';
+import { createUsersRoutes } from './routes/users.routes.js';
+import { createFollowsRoutes } from './routes/follows.routes.js';
 import type {
   IUserRepository,
+  IPostRepository,
   ISessionRepository,
+  ICategoryRepository,
+  ITagRepository,
+  IFollowRepository,
   ITokenGenerator,
   IPasswordHasher,
+  IEmailVerificationTokenRepository,
+  IPasswordResetTokenRepository,
+  IEmailService,
 } from '@blog/backend/core';
 
 export interface AppDependencies {
   env: Env;
   userRepository: IUserRepository;
+  postRepository: IPostRepository;
   sessionRepository: ISessionRepository;
+  categoryRepository: ICategoryRepository;
+  tagRepository: ITagRepository;
+  followRepository: IFollowRepository;
   tokenGenerator: ITokenGenerator;
   passwordHasher: IPasswordHasher;
+  // Optional dependencies
+  emailVerificationTokenRepository?: IEmailVerificationTokenRepository;
+  passwordResetTokenRepository?: IPasswordResetTokenRepository;
+  emailService?: IEmailService;
 }
 
 export function createApp(deps: AppDependencies): Express {
@@ -146,6 +167,10 @@ export function createApp(deps: AppDependencies): Express {
     tokenGenerator: deps.tokenGenerator,
   });
 
+  const optionalAuthMiddleware = createOptionalAuthMiddleware({
+    tokenGenerator: deps.tokenGenerator,
+  });
+
   // API Routes
   const authRoutes = createAuthRoutes({
     userRepository: deps.userRepository,
@@ -153,9 +178,41 @@ export function createApp(deps: AppDependencies): Express {
     passwordHasher: deps.passwordHasher,
     tokenGenerator: deps.tokenGenerator,
     authMiddleware,
+    emailVerificationTokenRepository: deps.emailVerificationTokenRepository,
+    passwordResetTokenRepository: deps.passwordResetTokenRepository,
+    emailService: deps.emailService,
+    appUrl: deps.env.APP_URL,
+  });
+
+  const postsRoutes = createPostsRoutes({
+    postRepository: deps.postRepository,
+    userRepository: deps.userRepository,
+    categoryRepository: deps.categoryRepository,
+    tagRepository: deps.tagRepository,
+    authMiddleware,
+    optionalAuthMiddleware,
+  });
+
+  const usersRoutes = createUsersRoutes({
+    userRepository: deps.userRepository,
+    postRepository: deps.postRepository,
+    followRepository: deps.followRepository,
+    authMiddleware,
+    optionalAuthMiddleware,
+  });
+
+  const followsRoutes = createFollowsRoutes({
+    followRepository: deps.followRepository,
+    userRepository: deps.userRepository,
+    authMiddleware,
+    optionalAuthMiddleware,
   });
 
   app.use('/api/auth', authRoutes);
+  app.use('/api/posts', postsRoutes);
+  app.use('/api/users', usersRoutes);
+  // Mount follows routes under /api/users for follow/unfollow endpoints
+  app.use('/api/users', followsRoutes);
 
   // 404 handler
   app.use(notFoundHandler);
