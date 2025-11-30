@@ -1,0 +1,9 @@
+{
+  "javascript.validate.enable": true,
+  "javascript.suggestionActions.enabled": true,
+  "javascript.suggest.paths": false,
+  "typescript.suggest.paths": false,
+  "js/ts.implicitProjectConfig.checkJs": false,
+  "javascript.preferences.importModuleSpecifierEnding": "auto",
+  "typescript.preferences.importModuleSpecifierEnding": "auto"
+}

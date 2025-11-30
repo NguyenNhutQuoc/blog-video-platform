@@ -13,7 +13,16 @@
       "path": "./libs/backend/infrastructure"
     },
     {
-      "path": "./apps/api-server"
+      "path": "./apps/web-client"
+    },
+    {
+      "path": "./libs/shared/ui-kit"
+    },
+    {
+      "path": "./libs/shared/utils"
+    },
+    {
+      "path": "./libs/shared/data-access"
     }
   ]
 }

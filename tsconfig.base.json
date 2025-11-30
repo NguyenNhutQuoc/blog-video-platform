@@ -13,9 +13,9 @@
     "baseUrl": ".",
     "paths": {
       "@blog/shared/domain": ["libs/shared/domain/src/index.ts"],
-      "@blog/shared/ui-kit": ["libs/shared/ui-kit/src/index.ts"],
-      "@blog/shared/utils": ["libs/shared/utils/src/index.ts"],
-      "@blog/shared/data-access": ["libs/shared/data-access/src/index.ts"],
+      "@blog/shared-ui-kit": ["libs/shared/ui-kit/src/index.ts"],
+      "@blog/shared-utils": ["libs/shared/utils/src/index.ts"],
+      "@blog/shared-data-access": ["libs/shared/data-access/src/index.ts"],
       "@blog/backend/core": ["libs/backend/core/src/index.ts"],
       "@blog/backend/infrastructure": [
         "libs/backend/infrastructure/src/index.ts"

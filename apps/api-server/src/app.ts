@@ -70,6 +70,8 @@ export function createApp(deps: AppDependencies): Express {
   // Security middleware
   app.use(helmet());
 
+  console.log('CORS_ORIGIN:', deps.env.CORS_ORIGIN);
+
   // CORS
   app.use(
     cors({

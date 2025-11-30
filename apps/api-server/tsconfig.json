@@ -13,10 +13,10 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
-      "path": "../../libs/backend/infrastructure/tsconfig.lib.json"
+      "path": "../../libs/backend/infrastructure"
     },
     {
-      "path": "../../libs/backend/core/tsconfig.lib.json"
+      "path": "../../libs/backend/core"
     }
   ],
   "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
