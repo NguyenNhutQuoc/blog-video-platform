@@ -11,13 +11,14 @@ import { TagEntity, type Tag } from '@blog/shared/domain';
  * Map database row to domain entity
  */
 export function toDomainTag(row: TagRow): TagEntity {
+  // CamelCasePlugin converts DB columns to camelCase
   const tag: Tag = {
     id: row.id,
     name: row.name,
     slug: row.slug,
-    usageCount: row.usage_count,
-    createdAt: row.created_at,
-    updatedAt: row.created_at, // Schema doesn't have updated_at
+    usageCount: row.usageCount,
+    createdAt: row.createdAt,
+    updatedAt: row.createdAt, // Schema doesn't have updated_at
   };
 
   return TagEntity.fromPersistence(tag);

@@ -2,8 +2,8 @@
  * User Entity Mapper
  *
  * Converts between database rows and domain entities.
- * Note: We use snake_case for database columns as Kysely CamelCasePlugin
- * transforms them at query time, but our types remain in snake_case.
+ * Note: Kysely CamelCasePlugin transforms column names automatically.
+ * DB snake_case -> JS camelCase at query time.
  */
 
 import type { UserRow, NewUser, UserUpdate } from '../database/types.js';
@@ -25,32 +25,57 @@ function sanitizeSocialLinks(
   return sanitized;
 }
 
+// Type for the row after CamelCasePlugin transforms it
+interface CamelCaseUserRow {
+  id: string;
+  email: string;
+  username: string;
+  passwordHash: string;
+  fullName: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+  socialLinks: Record<string, unknown> | null;
+  emailVerified: boolean;
+  isActive: boolean;
+  isAdmin: boolean;
+  spamScore: number;
+  failedLoginAttempts: number;
+  lockedUntil: Date | null;
+  lastLoginAt: Date | null;
+  passwordChangedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+}
+
 /**
  * Map database row to domain entity
+ * Note: Kysely CamelCasePlugin already converts snake_case to camelCase
  */
 export function toDomainUser(row: UserRow): UserEntity {
+  // Cast to camelCase type since CamelCasePlugin transforms the row
+  const camelRow = row as unknown as CamelCaseUserRow;
+
   const user: User = {
-    id: row.id,
-    email: row.email,
-    username: row.username,
-    passwordHash: row.password_hash,
-    fullName: row.full_name ?? null,
-    bio: row.bio ?? null,
-    avatarUrl: row.avatar_url ?? null,
-    socialLinks: sanitizeSocialLinks(
-      row.social_links as Record<string, unknown>
-    ),
-    emailVerified: row.email_verified,
-    isActive: row.is_active,
-    isAdmin: row.is_admin,
-    spamScore: row.spam_score,
-    failedLoginAttempts: row.failed_login_attempts ?? 0,
-    lockedUntil: row.locked_until ?? null,
-    lastLoginAt: row.last_login_at ?? null,
-    passwordChangedAt: row.password_changed_at ?? null,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    deletedAt: row.deleted_at ?? null,
+    id: camelRow.id,
+    email: camelRow.email,
+    username: camelRow.username,
+    passwordHash: camelRow.passwordHash,
+    fullName: camelRow.fullName ?? null,
+    bio: camelRow.bio ?? null,
+    avatarUrl: camelRow.avatarUrl ?? null,
+    socialLinks: sanitizeSocialLinks(camelRow.socialLinks),
+    emailVerified: camelRow.emailVerified,
+    isActive: camelRow.isActive,
+    isAdmin: camelRow.isAdmin,
+    spamScore: camelRow.spamScore,
+    failedLoginAttempts: camelRow.failedLoginAttempts ?? 0,
+    lockedUntil: camelRow.lockedUntil ?? null,
+    lastLoginAt: camelRow.lastLoginAt ?? null,
+    passwordChangedAt: camelRow.passwordChangedAt ?? null,
+    createdAt: camelRow.createdAt,
+    updatedAt: camelRow.updatedAt,
+    deletedAt: camelRow.deletedAt ?? null,
   };
 
   return new UserEntity(user);

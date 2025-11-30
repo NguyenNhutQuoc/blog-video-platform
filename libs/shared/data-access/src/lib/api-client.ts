@@ -75,7 +75,12 @@ const createApiClient = (): AxiosInstance => {
   client.interceptors.response.use(
     (response) => response.data,
     async (error: AxiosError<ApiError>) => {
-      if (error.response?.status === 401) {
+      const originalRequest = error.config;
+
+      // Skip redirect for auth/me endpoint to prevent loop
+      const isAuthMeRequest = originalRequest?.url?.includes('/auth/me');
+
+      if (error.response?.status === 401 && !isAuthMeRequest) {
         // Token expired, try to refresh
         const refresh =
           refreshToken ||
@@ -96,22 +101,16 @@ const createApiClient = (): AxiosInstance => {
             setTokens(newAccessToken, newRefreshToken);
 
             // Retry original request
-            if (error.config) {
-              error.config.headers.Authorization = `Bearer ${newAccessToken}`;
-              return client.request(error.config);
+            if (originalRequest) {
+              originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+              return client.request(originalRequest);
             }
           } catch (refreshError) {
-            // Refresh failed, clear tokens and redirect to login
+            // Refresh failed, clear tokens (don't redirect, let component handle it)
             clearTokens();
-            if (typeof window !== 'undefined') {
-              window.location.href = '/login';
-            }
           }
         } else {
           clearTokens();
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-          }
         }
       }
 

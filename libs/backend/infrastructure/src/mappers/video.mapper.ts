@@ -11,12 +11,13 @@ import { VideoEntity, type Video } from '@blog/shared/domain';
  * Map database row to domain entity
  */
 export function toDomainVideo(row: VideoRow): VideoEntity {
+  // CamelCasePlugin converts DB columns to camelCase
   const video: Video = {
     id: row.id,
-    postId: row.post_id ?? null,
-    originalFilename: row.original_filename,
-    fileSize: row.file_size,
-    mimeType: row.mime_type,
+    postId: row.postId ?? null,
+    originalFilename: row.originalFilename,
+    fileSize: row.fileSize,
+    mimeType: row.mimeType,
     status: row.status as
       | 'uploading'
       | 'processing'
@@ -26,22 +27,22 @@ export function toDomainVideo(row: VideoRow): VideoEntity {
     duration: row.duration ?? null,
     width: row.width ?? null,
     height: row.height ?? null,
-    originalCodec: row.original_codec ?? null,
-    originalBitrate: row.original_bitrate ?? null,
-    rawFilePath: row.raw_file_path ?? null,
-    hlsMasterUrl: row.hls_master_url ?? null,
-    thumbnailUrl: row.thumbnail_url ?? null,
-    availableQualities: (row.available_qualities ?? []) as unknown as (
+    originalCodec: row.originalCodec ?? null,
+    originalBitrate: row.originalBitrate ?? null,
+    rawFilePath: row.rawFilePath ?? null,
+    hlsMasterUrl: row.hlsMasterUrl ?? null,
+    thumbnailUrl: row.thumbnailUrl ?? null,
+    availableQualities: (row.availableQualities ?? []) as unknown as (
       | '1080p'
       | '720p'
       | '480p'
       | '360p'
     )[],
-    retryCount: row.retry_count,
-    errorMessage: row.error_message ?? null,
-    uploadedAt: row.uploaded_at ?? null,
-    processingCompletedAt: row.processing_completed_at ?? null,
-    createdAt: row.created_at,
+    retryCount: row.retryCount,
+    errorMessage: row.errorMessage ?? null,
+    uploadedAt: row.uploadedAt ?? null,
+    processingCompletedAt: row.processingCompletedAt ?? null,
+    createdAt: row.createdAt,
   };
 
   return new VideoEntity(video);

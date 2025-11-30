@@ -25,7 +25,8 @@ export default function HomePage() {
       limit: 10,
     });
 
-  const posts = data?.pages.flatMap((page) => page.data) || [];
+  // Backend returns cursor-based pagination with 'posts' array
+  const posts = data?.pages.flatMap((page) => page.posts) || [];
 
   const handleLogout = async () => {
     await logout();
@@ -76,7 +77,7 @@ export default function HomePage() {
             {posts.map((post) => (
               <Box
                 key={post.id}
-                onClick={() => router.push(`/posts/${post.id}`)}
+                onClick={() => router.push(`/posts/${post.slug}`)}
                 sx={{ cursor: 'pointer' }}
               >
                 <PostCard
@@ -89,7 +90,7 @@ export default function HomePage() {
                     fullName: post.author.fullName,
                     avatarUrl: post.author.avatarUrl,
                   }}
-                  tags={post.tags.map((tag) => tag.name)}
+                  tags={[]} // PostSummary doesn't include tags
                   likeCount={post.likeCount}
                   commentCount={post.commentCount}
                   createdAt={post.createdAt}

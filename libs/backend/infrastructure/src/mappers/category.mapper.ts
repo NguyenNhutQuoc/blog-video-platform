@@ -15,6 +15,7 @@ import { CategoryEntity, type Category } from '@blog/shared/domain';
  * Map database row to domain entity
  */
 export function toDomainCategory(row: CategoryRow): CategoryEntity {
+  // CamelCasePlugin converts DB columns to camelCase
   const category: Category = {
     id: row.id,
     name: row.name,
@@ -23,9 +24,9 @@ export function toDomainCategory(row: CategoryRow): CategoryEntity {
     parentId: null, // Categories table doesn't have parent_id in current schema
     sortOrder: 0,
     isActive: true,
-    postCount: row.post_count,
-    createdAt: row.created_at,
-    updatedAt: row.created_at, // Schema doesn't have updated_at
+    postCount: row.postCount,
+    createdAt: row.createdAt,
+    updatedAt: row.createdAt, // Schema doesn't have updated_at
   };
 
   return CategoryEntity.fromPersistence(category);

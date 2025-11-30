@@ -15,19 +15,20 @@ import { SessionEntity, type Session } from '@blog/shared/domain';
  * Map database row to domain entity
  */
 export function toDomainSession(row: SessionRow): SessionEntity {
+  // CamelCasePlugin converts DB columns to camelCase
   const session: Session = {
     id: row.id,
-    userId: row.user_id,
+    userId: row.userId,
     refreshToken: row.token,
-    userAgent: row.user_agent ?? null,
-    ipAddress: row.ip_address ?? null,
+    userAgent: row.userAgent ?? null,
+    ipAddress: row.ipAddress ?? null,
     deviceName:
-      ((row.device_info as Record<string, unknown> | null)?.deviceName as
+      ((row.deviceInfo as Record<string, unknown> | null)?.deviceName as
         | string
         | null) ?? null,
-    lastActiveAt: row.last_active_at,
-    expiresAt: row.expires_at,
-    createdAt: row.created_at,
+    lastActiveAt: row.lastActiveAt,
+    expiresAt: row.expiresAt,
+    createdAt: row.createdAt,
   };
 
   return SessionEntity.fromPersistence(session);

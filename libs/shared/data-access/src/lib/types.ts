@@ -11,10 +11,32 @@ export interface RegisterRequest {
   fullName: string;
 }
 
-export interface AuthResponse {
+// API response wrapper
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+// Auth tokens
+export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
-  user: User;
+  accessTokenExpiresAt: string;
+  refreshTokenExpiresAt: string;
+}
+
+// Auth user (simpler version returned from login/register)
+export interface AuthUser {
+  id: string;
+  email: string;
+  username: string;
+  fullName: string;
+  isAdmin: boolean;
+}
+
+export interface AuthResponse {
+  user: AuthUser;
+  tokens: AuthTokens;
 }
 
 // User types
@@ -128,6 +150,40 @@ export interface Follow {
   createdAt: string;
 }
 
+// Author summary (embedded in PostSummary)
+export interface AuthorSummary {
+  id: string;
+  username: string;
+  fullName: string | null;
+  avatarUrl: string | null;
+}
+
+// Post summary (for list views - matches backend PostSummary)
+export interface PostSummary {
+  id: string;
+  authorId: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  featuredImageUrl: string | null;
+  status: 'draft' | 'published' | 'archived';
+  visibility: 'public' | 'private' | 'unlisted';
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  publishedAt: string | null;
+  createdAt: string;
+  author: AuthorSummary;
+}
+
+// Cursor-based pagination response (for posts list)
+export interface CursorPaginatedResponse<T> {
+  posts: T[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  total?: number;
+}
+
 // Pagination types
 export interface PaginationParams {
   page?: number;
@@ -144,12 +200,15 @@ export interface PaginatedResponse<T> {
   };
 }
 
-// List filters
-export interface PostFilters extends PaginationParams {
+// List filters (cursor-based)
+export interface PostFilters {
   status?: 'draft' | 'published' | 'archived';
   visibility?: 'public' | 'private' | 'unlisted';
   authorId?: string;
   categoryId?: string;
   tagId?: string;
-  search?: string;
+  cursor?: string;
+  limit?: number;
+  orderBy?: 'publishedAt' | 'viewCount' | 'likeCount';
+  orderDir?: 'asc' | 'desc';
 }

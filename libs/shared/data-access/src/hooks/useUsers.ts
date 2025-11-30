@@ -29,10 +29,8 @@ export const useUser = (username: string) => {
   return useQuery({
     queryKey: userKeys.detail(username),
     queryFn: async (): Promise<User> => {
-      const response = await apiClient.get<{ data: User }>(
-        `/users/${username}`
-      );
-      return response.data.data;
+      const response = await apiClient.get<User>(`/users/${username}`);
+      return response.data;
     },
     enabled: !!username,
   });
@@ -43,13 +41,13 @@ export const useUserPosts = (username: string) => {
   return useInfiniteQuery({
     queryKey: userKeys.posts(username),
     queryFn: async ({ pageParam = 1 }): Promise<PaginatedResponse<Post>> => {
-      const response = await apiClient.get<{ data: PaginatedResponse<Post> }>(
+      const response = await apiClient.get<PaginatedResponse<Post>>(
         `/users/${username}/posts`,
         {
           params: { page: pageParam, limit: 10 },
         }
       );
-      return response.data.data;
+      return response.data;
     },
     getNextPageParam: (lastPage) => {
       const { page, totalPages } = lastPage.pagination;
@@ -65,13 +63,13 @@ export const useUserFollowers = (username: string) => {
   return useInfiniteQuery({
     queryKey: userKeys.followers(username),
     queryFn: async ({ pageParam = 1 }): Promise<PaginatedResponse<User>> => {
-      const response = await apiClient.get<{ data: PaginatedResponse<User> }>(
+      const response = await apiClient.get<PaginatedResponse<User>>(
         `/users/${username}/followers`,
         {
           params: { page: pageParam, limit: 20 },
         }
       );
-      return response.data.data;
+      return response.data;
     },
     getNextPageParam: (lastPage) => {
       const { page, totalPages } = lastPage.pagination;
@@ -87,13 +85,13 @@ export const useUserFollowing = (username: string) => {
   return useInfiniteQuery({
     queryKey: userKeys.following(username),
     queryFn: async ({ pageParam = 1 }): Promise<PaginatedResponse<User>> => {
-      const response = await apiClient.get<{ data: PaginatedResponse<User> }>(
+      const response = await apiClient.get<PaginatedResponse<User>>(
         `/users/${username}/following`,
         {
           params: { page: pageParam, limit: 20 },
         }
       );
-      return response.data.data;
+      return response.data;
     },
     getNextPageParam: (lastPage) => {
       const { page, totalPages } = lastPage.pagination;
@@ -110,11 +108,8 @@ export const useUpdateProfile = () => {
 
   return useMutation({
     mutationFn: async (userData: UpdateUserRequest): Promise<User> => {
-      const response = await apiClient.put<{ data: User }>(
-        '/users/me',
-        userData
-      );
-      return response.data.data;
+      const response = await apiClient.put<User>('/users/me', userData);
+      return response.data;
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['auth', 'me'], data);

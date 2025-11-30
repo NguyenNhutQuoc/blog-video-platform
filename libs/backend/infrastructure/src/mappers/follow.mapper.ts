@@ -11,11 +11,12 @@ import { FollowEntity, type Follow } from '@blog/shared/domain';
  * Map database row to domain entity
  */
 export function toDomainFollow(row: FollowRow): FollowEntity {
+  // CamelCasePlugin converts DB columns to camelCase
   const follow: Follow = {
     id: row.id,
-    followerId: row.follower_id,
-    followingId: row.following_id,
-    createdAt: row.created_at,
+    followerId: row.followerId,
+    followingId: row.followingId,
+    createdAt: row.createdAt,
   };
 
   return FollowEntity.fromPersistence(follow);

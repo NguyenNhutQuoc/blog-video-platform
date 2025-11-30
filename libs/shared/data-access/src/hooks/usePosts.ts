@@ -7,10 +7,11 @@ import {
 import { apiClient } from '../lib/api-client';
 import type {
   Post,
+  PostSummary,
   CreatePostRequest,
   UpdatePostRequest,
   PostFilters,
-  PaginatedResponse,
+  CursorPaginatedResponse,
 } from '../lib/types';
 
 // Query keys
@@ -22,40 +23,39 @@ export const postKeys = {
   detail: (id: string) => [...postKeys.details(), id] as const,
 };
 
-// Get posts with pagination
+// Get posts with cursor-based pagination
 export const usePosts = (filters: PostFilters = {}) => {
   return useQuery({
     queryKey: postKeys.list(filters),
-    queryFn: async (): Promise<PaginatedResponse<Post>> => {
-      const response = await apiClient.get<{ data: PaginatedResponse<Post> }>(
-        '/posts',
-        {
-          params: filters,
-        }
-      );
-      return response.data.data;
+    queryFn: async (): Promise<CursorPaginatedResponse<PostSummary>> => {
+      const response = await apiClient.get<
+        CursorPaginatedResponse<PostSummary>
+      >('/posts', {
+        params: filters,
+      });
+      return response.data;
     },
   });
 };
 
-// Get posts with infinite scroll
-export const useInfinitePosts = (filters: Omit<PostFilters, 'page'> = {}) => {
+// Get posts with infinite scroll (cursor-based)
+export const useInfinitePosts = (filters: Omit<PostFilters, 'cursor'> = {}) => {
   return useInfiniteQuery({
-    queryKey: postKeys.list({ ...filters, page: undefined }),
-    queryFn: async ({ pageParam = 1 }): Promise<PaginatedResponse<Post>> => {
-      const response = await apiClient.get<{ data: PaginatedResponse<Post> }>(
-        '/posts',
-        {
-          params: { ...filters, page: pageParam },
-        }
-      );
-      return response.data.data;
+    queryKey: postKeys.list({ ...filters, cursor: undefined }),
+    queryFn: async ({
+      pageParam,
+    }): Promise<CursorPaginatedResponse<PostSummary>> => {
+      const response = await apiClient.get<
+        CursorPaginatedResponse<PostSummary>
+      >('/posts', {
+        params: { ...filters, cursor: pageParam },
+      });
+      return response.data;
     },
     getNextPageParam: (lastPage) => {
-      const { page, totalPages } = lastPage.pagination;
-      return page < totalPages ? page + 1 : undefined;
+      return lastPage.hasMore ? lastPage.nextCursor : undefined;
     },
-    initialPageParam: 1,
+    initialPageParam: undefined as string | undefined,
   });
 };
 
@@ -64,10 +64,8 @@ export const usePost = (idOrSlug: string) => {
   return useQuery({
     queryKey: postKeys.detail(idOrSlug),
     queryFn: async (): Promise<Post> => {
-      const response = await apiClient.get<{ data: Post }>(
-        `/posts/${idOrSlug}`
-      );
-      return response.data.data;
+      const response = await apiClient.get<Post>(`/posts/${idOrSlug}`);
+      return response.data;
     },
     enabled: !!idOrSlug,
   });
@@ -79,8 +77,8 @@ export const useCreatePost = () => {
 
   return useMutation({
     mutationFn: async (postData: CreatePostRequest): Promise<Post> => {
-      const response = await apiClient.post<{ data: Post }>('/posts', postData);
-      return response.data.data;
+      const response = await apiClient.post<Post>('/posts', postData);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: postKeys.lists() });
@@ -94,11 +92,8 @@ export const useUpdatePost = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: UpdatePostRequest): Promise<Post> => {
-      const response = await apiClient.put<{ data: Post }>(
-        `/posts/${id}`,
-        data
-      );
-      return response.data.data;
+      const response = await apiClient.put<Post>(`/posts/${id}`, data);
+      return response.data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: postKeys.lists() });

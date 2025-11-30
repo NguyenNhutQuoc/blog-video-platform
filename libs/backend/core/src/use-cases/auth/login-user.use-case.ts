@@ -71,6 +71,8 @@ export class LoginUserUseCase {
       );
     }
 
+    console.log('Found user:', user);
+
     // 2. Check if account is locked
     if (user.isLocked()) {
       const remainingMinutes = user.getRemainingLockoutMinutes();

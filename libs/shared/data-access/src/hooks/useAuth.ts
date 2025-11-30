@@ -18,8 +18,8 @@ export const useMe = () => {
   return useQuery({
     queryKey: authKeys.me(),
     queryFn: async (): Promise<User> => {
-      const response = await apiClient.get<{ data: User }>('/auth/me');
-      return response.data.data;
+      const response = await apiClient.get<User>('/auth/me');
+      return response.data;
     },
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -32,14 +32,16 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: async (credentials: LoginRequest): Promise<AuthResponse> => {
-      const response = await apiClient.post<{ data: AuthResponse }>(
+      const response = await apiClient.post<AuthResponse>(
         '/auth/login',
         credentials
       );
-      return response.data.data;
+      return response.data;
     },
     onSuccess: (data) => {
-      setTokens(data.accessToken, data.refreshToken);
+      console.log('Login successful, setting tokens.');
+      console.log('Access Token:', data);
+      setTokens(data.tokens.accessToken, data.tokens.refreshToken);
       queryClient.setQueryData(authKeys.me(), data.user);
     },
   });
@@ -51,14 +53,14 @@ export const useRegister = () => {
 
   return useMutation({
     mutationFn: async (userData: RegisterRequest): Promise<AuthResponse> => {
-      const response = await apiClient.post<{ data: AuthResponse }>(
+      const response = await apiClient.post<AuthResponse>(
         '/auth/register',
         userData
       );
-      return response.data.data;
+      return response.data;
     },
     onSuccess: (data) => {
-      setTokens(data.accessToken, data.refreshToken);
+      setTokens(data.tokens.accessToken, data.tokens.refreshToken);
       queryClient.setQueryData(authKeys.me(), data.user);
     },
   });
@@ -83,11 +85,11 @@ export const useLogout = () => {
 export const useForgotPassword = () => {
   return useMutation({
     mutationFn: async (email: string): Promise<{ message: string }> => {
-      const response = await apiClient.post<{ data: { message: string } }>(
+      const response = await apiClient.post<{ message: string }>(
         '/auth/forgot-password',
         { email }
       );
-      return response.data.data;
+      return response.data;
     },
   });
 };
@@ -102,14 +104,14 @@ export const useResetPassword = () => {
       token: string;
       password: string;
     }): Promise<{ message: string }> => {
-      const response = await apiClient.post<{ data: { message: string } }>(
+      const response = await apiClient.post<{ message: string }>(
         '/auth/reset-password',
         {
           token,
           password,
         }
       );
-      return response.data.data;
+      return response.data;
     },
   });
 };
