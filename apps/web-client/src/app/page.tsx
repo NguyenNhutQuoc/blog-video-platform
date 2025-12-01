@@ -17,8 +17,9 @@ export default function HomePage() {
       limit: 10,
     });
 
-  // Backend returns cursor-based pagination with 'posts' array
-  const posts = data?.pages.flatMap((page) => page.posts) || [];
+  // Backend returns cursor-based pagination - check both 'posts' and 'data' fields
+  const posts =
+    data?.pages.flatMap((page) => page.posts ?? page.data ?? []) || [];
 
   const handleLogout = async () => {
     await logout();
@@ -78,11 +79,11 @@ export default function HomePage() {
                   id={post.id}
                   title={post.title}
                   excerpt={post.excerpt || ''}
-                  featuredImageUrl={post.featuredImageUrl}
+                  featuredImageUrl={post.featuredImageUrl ?? undefined}
                   author={{
-                    username: post.author.username,
-                    fullName: post.author.fullName,
-                    avatarUrl: post.author.avatarUrl,
+                    username: post.author?.username ?? 'unknown',
+                    fullName: post.author?.fullName ?? null,
+                    avatarUrl: post.author?.avatarUrl ?? null,
                   }}
                   tags={[]} // PostSummary doesn't include tags
                   likeCount={post.likeCount}

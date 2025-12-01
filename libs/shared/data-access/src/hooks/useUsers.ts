@@ -30,7 +30,7 @@ export const useUser = (username: string) => {
     queryKey: userKeys.detail(username),
     queryFn: async (): Promise<User> => {
       const response = await apiClient.get<User>(`/users/${username}`);
-      return response.data;
+      return response as unknown as User;
     },
     enabled: !!username,
   });
@@ -47,7 +47,7 @@ export const useUserPosts = (username: string) => {
           params: { cursor: pageParam, limit: 10 },
         }
       );
-      return response.data;
+      return response as unknown as CursorPaginatedResponse<Post>;
     },
     getNextPageParam: (lastPage) => {
       return lastPage.hasMore ? lastPage.nextCursor : undefined;
@@ -68,7 +68,7 @@ export const useUserFollowers = (username: string) => {
           params: { cursor: pageParam, limit: 20 },
         }
       );
-      return response.data;
+      return response as unknown as CursorPaginatedResponse<User>;
     },
     getNextPageParam: (lastPage) => {
       return lastPage.hasMore ? lastPage.nextCursor : undefined;
@@ -89,7 +89,7 @@ export const useUserFollowing = (username: string) => {
           params: { cursor: pageParam, limit: 20 },
         }
       );
-      return response.data;
+      return response as unknown as CursorPaginatedResponse<User>;
     },
     getNextPageParam: (lastPage) => {
       return lastPage.hasMore ? lastPage.nextCursor : undefined;
@@ -106,7 +106,7 @@ export const useUpdateProfile = () => {
   return useMutation({
     mutationFn: async (userData: UpdateUserRequest): Promise<User> => {
       const response = await apiClient.put<User>('/users/me', userData);
-      return response.data;
+      return response as unknown as User;
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['auth', 'me'], data);

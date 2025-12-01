@@ -13,9 +13,9 @@ import { Badge } from '../Badge';
 
 export interface UserProfileCardProps {
   username: string;
-  fullName: string;
+  fullName?: string | null;
   bio?: string;
-  avatarUrl?: string;
+  avatarUrl?: string | null;
   postsCount: number;
   followersCount: number;
   followingCount: number;
@@ -40,6 +40,8 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
   onUnfollow,
   onEdit,
 }) => {
+  const displayName = fullName || username;
+
   return (
     <Card sx={{ maxWidth: 400 }}>
       <CardContent>
@@ -63,8 +65,8 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
             }
           >
             <Avatar
-              src={avatarUrl}
-              name={fullName}
+              src={avatarUrl ?? undefined}
+              name={displayName}
               sx={{ width: 80, height: 80 }}
             />
           </Badge>
@@ -72,7 +74,7 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
           {/* Name and Username */}
           <Box textAlign="center">
             <Typography variant="h6" fontWeight={600}>
-              {fullName}
+              {displayName}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               @{username}

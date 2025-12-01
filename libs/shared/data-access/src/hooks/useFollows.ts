@@ -16,9 +16,9 @@ export const useFollowers = (username: string, page = 1, limit = 20) => {
   return useQuery({
     queryKey: [...followKeys.followers(username), page, limit],
     queryFn: async (): Promise<PaginatedResponse<User>> => {
-      const response = (await apiClient.get(`/users/${username}/followers`, {
+      const response = await apiClient.get(`/users/${username}/followers`, {
         params: { page, limit },
-      })) as { data: PaginatedResponse<User> };
+      });
       return response.data;
     },
     enabled: !!username,
@@ -30,9 +30,9 @@ export const useFollowing = (username: string, page = 1, limit = 20) => {
   return useQuery({
     queryKey: [...followKeys.following(username), page, limit],
     queryFn: async (): Promise<PaginatedResponse<User>> => {
-      const response = (await apiClient.get(`/users/${username}/following`, {
+      const response = await apiClient.get(`/users/${username}/following`, {
         params: { page, limit },
-      })) as { data: PaginatedResponse<User> };
+      });
       return response.data;
     },
     enabled: !!username,

@@ -55,6 +55,7 @@ function PostDetailContent() {
   const postId = params.id as string;
 
   const { data: post, isLoading: postLoading } = usePost(postId);
+  console.log('Post data:', post);
   const { data: commentsData } = usePostComments(postId);
   const createCommentMutation = useCreateComment();
   const likePostMutation = useLikePost();
@@ -189,7 +190,7 @@ function PostDetailContent() {
               onClose={() => setAnchorEl(null)}
             >
               <MenuItem onClick={() => setAnchorEl(null)}>Report</MenuItem>
-              {user?.id === post.author.id && (
+              {user?.id === post.author?.id && (
                 <>
                   <MenuItem
                     onClick={() => router.push(`/posts/${postId}/edit`)}
@@ -205,10 +206,10 @@ function PostDetailContent() {
           {/* Author Info */}
           <Box mb={3}>
             <UserProfileCard
-              username={post.author.username}
-              fullName={post.author.fullName}
-              bio={post.author.bio || ''}
-              avatarUrl={post.author.avatarUrl}
+              username={post.author?.username}
+              fullName={post.author?.fullName}
+              bio={post.author?.bio || ''}
+              avatarUrl={post.author?.avatarUrl}
               postsCount={0}
               followersCount={0}
               followingCount={0}
@@ -232,16 +233,60 @@ function PostDetailContent() {
             />
           )}
 
-          {/* Post Content */}
-          <Typography
-            variant="body1"
-            sx={{ whiteSpace: 'pre-wrap', mb: 3, lineHeight: 1.8 }}
-          >
-            {post.content}
-          </Typography>
+          {/* Post Content - render HTML from TipTap */}
+          <Box
+            sx={{
+              mb: 3,
+              lineHeight: 1.8,
+              '& h1, & h2, & h3, & h4, & h5, & h6': {
+                mt: 3,
+                mb: 2,
+                fontWeight: 700,
+              },
+              '& h1': { fontSize: '2rem' },
+              '& h2': { fontSize: '1.5rem' },
+              '& h3': { fontSize: '1.25rem' },
+              '& p': { mb: 2 },
+              '& ul, & ol': { pl: 3, mb: 2 },
+              '& li': { mb: 1 },
+              '& blockquote': {
+                borderLeft: '4px solid',
+                borderColor: 'primary.main',
+                pl: 2,
+                ml: 0,
+                fontStyle: 'italic',
+                color: 'text.secondary',
+              },
+              '& code': {
+                bgcolor: 'grey.100',
+                px: 0.5,
+                py: 0.25,
+                borderRadius: 0.5,
+                fontFamily: 'monospace',
+              },
+              '& pre': {
+                bgcolor: 'grey.900',
+                color: 'grey.100',
+                p: 2,
+                borderRadius: 1,
+                overflow: 'auto',
+              },
+              '& a': {
+                color: 'primary.main',
+                textDecoration: 'underline',
+              },
+              '& hr': {
+                my: 3,
+                border: 'none',
+                borderTop: '1px solid',
+                borderColor: 'divider',
+              },
+            }}
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
 
           {/* Tags */}
-          {post.tags.length > 0 && (
+          {post.tags && post.tags.length > 0 && (
             <Stack direction="row" spacing={1} mb={3} flexWrap="wrap" gap={1}>
               {post.tags.map((tag) => (
                 <Typography

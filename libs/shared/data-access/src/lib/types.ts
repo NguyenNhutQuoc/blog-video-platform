@@ -69,24 +69,64 @@ export interface UpdateUserRequest {
   };
 }
 
-// Post types
-export interface Post {
+// Post types - matches backend response structure
+export interface PostData {
   id: string;
+  authorId: string;
   title: string;
   slug: string;
   content: string;
-  excerpt?: string;
-  featuredImageUrl?: string;
-  videoId?: string;
+  excerpt?: string | null;
+  featuredImageUrl?: string | null;
+  videoId?: string | null;
   status: 'draft' | 'published' | 'archived';
   visibility: 'public' | 'private' | 'unlisted';
-  author: User;
-  categories: Category[];
-  tags: Tag[];
   viewCount: number;
   likeCount: number;
   commentCount: number;
-  publishedAt?: string;
+  bookmarkCount: number;
+  publishedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Author info from post detail response
+export interface PostAuthor {
+  id: string;
+  username: string;
+  fullName: string | null;
+  avatarUrl: string | null;
+  bio?: string;
+}
+
+// Backend response for single post
+export interface PostDetailResponse {
+  post: PostData;
+  author: PostAuthor;
+  categories?: Array<{ id: string; name: string; slug: string }>;
+  tags?: Array<{ id: string; name: string; slug: string }>;
+}
+
+// Flattened Post for FE convenience (combining post + author)
+export interface Post {
+  id: string;
+  authorId: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt?: string | null;
+  featuredImageUrl?: string | null;
+  videoId?: string | null;
+  status: 'draft' | 'published' | 'archived';
+  visibility: 'public' | 'private' | 'unlisted';
+  author: PostAuthor;
+  categories?: Array<{ id: string; name: string; slug: string }>;
+  tags?: Array<{ id: string; name: string; slug: string }>;
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  bookmarkCount: number;
+  publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

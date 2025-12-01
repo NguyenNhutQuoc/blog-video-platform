@@ -1,9 +1,17 @@
 /**
  * Format date to relative time (e.g., "2 hours ago")
  */
-export function formatRelativeTime(date: Date | string): string {
+export function formatRelativeTime(
+  date: Date | string | null | undefined
+): string {
+  if (!date) {
+    return '';
+  }
   const now = new Date();
   const target = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(target.getTime())) {
+    return '';
+  }
   const diffInSeconds = Math.floor((now.getTime() - target.getTime()) / 1000);
 
   if (diffInSeconds < 60) {
@@ -43,10 +51,16 @@ export function formatRelativeTime(date: Date | string): string {
  * Format date to readable string (e.g., "Jan 1, 2024")
  */
 export function formatDate(
-  date: Date | string,
+  date: Date | string | null | undefined,
   options?: Intl.DateTimeFormatOptions
 ): string {
+  if (!date) {
+    return '';
+  }
   const target = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(target.getTime())) {
+    return '';
+  }
   return target.toLocaleDateString(
     'en-US',
     options || {
@@ -60,8 +74,14 @@ export function formatDate(
 /**
  * Format date and time (e.g., "Jan 1, 2024 at 10:30 AM")
  */
-export function formatDateTime(date: Date | string): string {
+export function formatDateTime(date: Date | string | null | undefined): string {
+  if (!date) {
+    return '';
+  }
   const target = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(target.getTime())) {
+    return '';
+  }
   return target.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -75,8 +95,14 @@ export function formatDateTime(date: Date | string): string {
 /**
  * Check if date is today
  */
-export function isToday(date: Date | string): boolean {
+export function isToday(date: Date | string | null | undefined): boolean {
+  if (!date) {
+    return false;
+  }
   const target = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(target.getTime())) {
+    return false;
+  }
   const today = new Date();
   return (
     target.getDate() === today.getDate() &&

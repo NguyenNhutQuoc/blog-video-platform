@@ -23,11 +23,11 @@ export interface PostCardProps {
   id: string;
   title: string;
   excerpt: string;
-  featuredImageUrl?: string;
+  featuredImageUrl?: string | null;
   author: {
     username: string;
-    fullName: string;
-    avatarUrl?: string;
+    fullName: string | null;
+    avatarUrl?: string | null;
   };
   tags?: string[];
   likeCount: number;
@@ -61,13 +61,13 @@ export const PostCard: React.FC<PostCardProps> = ({
       <CardContent sx={{ pb: 1 }}>
         <Stack direction="row" spacing={1.5} alignItems="center">
           <Avatar
-            src={author.avatarUrl}
-            name={author.fullName}
+            src={author.avatarUrl ?? undefined}
+            name={author.fullName || author.username}
             sx={{ width: 40, height: 40 }}
           />
           <Box flex={1}>
             <Typography variant="subtitle2" fontWeight={600}>
-              {author.fullName}
+              {author.fullName || author.username}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               @{author.username} · {new Date(createdAt).toLocaleDateString()}

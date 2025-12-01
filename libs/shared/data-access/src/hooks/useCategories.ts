@@ -15,7 +15,8 @@ export const useCategories = () => {
     queryKey: categoryKeys.lists(),
     queryFn: async (): Promise<Category[]> => {
       const response = await apiClient.get<Category[]>('/categories');
-      return response.data;
+      // Response interceptor already returns response.data
+      return (response as unknown as Category[]) ?? [];
     },
   });
 };
@@ -26,7 +27,7 @@ export const useCategory = (id: string) => {
     queryKey: categoryKeys.detail(id),
     queryFn: async (): Promise<Category> => {
       const response = await apiClient.get<Category>(`/categories/${id}`);
-      return response.data;
+      return response as unknown as Category;
     },
     enabled: !!id,
   });

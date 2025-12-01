@@ -17,6 +17,7 @@ export const useTags = (query?: string) => {
     queryFn: async (): Promise<Tag[]> => {
       const params = query ? { q: query } : {};
       const response = await apiClient.get<Tag[]>('/tags', { params });
+      // Response interceptor already returns response.data
       return response.data;
     },
   });

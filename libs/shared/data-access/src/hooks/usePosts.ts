@@ -12,6 +12,7 @@ import type {
   UpdatePostRequest,
   PostFilters,
   CursorPaginatedResponse,
+  PostDetailResponse,
 } from '../lib/types';
 
 // Query keys
@@ -33,6 +34,7 @@ export const usePosts = (filters: PostFilters = {}) => {
       >('/posts', {
         params: filters,
       });
+      // Response interceptor already returns response.data
       return response.data;
     },
   });
@@ -50,6 +52,7 @@ export const useInfinitePosts = (filters: Omit<PostFilters, 'cursor'> = {}) => {
       >('/posts', {
         params: { ...filters, cursor: pageParam },
       });
+      // Response interceptor already returns response.data
       return response.data;
     },
     getNextPageParam: (lastPage) => {
@@ -59,13 +62,24 @@ export const useInfinitePosts = (filters: Omit<PostFilters, 'cursor'> = {}) => {
   });
 };
 
-// Get single post
+// Get single post - transforms backend response to flat Post structure
 export const usePost = (idOrSlug: string) => {
   return useQuery({
     queryKey: postKeys.detail(idOrSlug),
     queryFn: async (): Promise<Post> => {
-      const response = await apiClient.get<Post>(`/posts/${idOrSlug}`);
-      return response.data;
+      // Backend returns { post, author, categories?, tags? }
+      const response = await apiClient.get<PostDetailResponse>(
+        `/posts/${idOrSlug}`
+      );
+      const data = response.data;
+
+      // Flatten the response into a single Post object
+      return {
+        ...data.post,
+        author: data.author,
+        categories: data.categories ?? [],
+        tags: data.tags ?? [],
+      };
     },
     enabled: !!idOrSlug,
   });
@@ -78,8 +92,18 @@ export const useCreatePost = () => {
   return useMutation({
     mutationFn: async (postData: CreatePostRequest): Promise<Post> => {
       console.log('Creating post with data:', postData);
-      const response = await apiClient.post<Post>('/posts', postData);
-      return response.data;
+      const response = await apiClient.post<PostDetailResponse>(
+        '/posts',
+        postData
+      );
+      const data = response.data;
+
+      return {
+        ...data.post,
+        author: data.author,
+        categories: data.categories ?? [],
+        tags: data.tags ?? [],
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: postKeys.lists() });
@@ -93,8 +117,18 @@ export const useUpdatePost = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: UpdatePostRequest): Promise<Post> => {
-      const response = await apiClient.put<Post>(`/posts/${id}`, data);
-      return response.data;
+      const response = await apiClient.put<PostDetailResponse>(
+        `/posts/${id}`,
+        data
+      );
+      const resData = response.data;
+
+      return {
+        ...resData.post,
+        author: resData.author,
+        categories: resData.categories ?? [],
+        tags: resData.tags ?? [],
+      };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: postKeys.lists() });

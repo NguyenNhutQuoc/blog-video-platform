@@ -47,9 +47,9 @@ export const useCreateComment = () => {
       postId: string;
       content: string;
     }): Promise<Comment> => {
-      const response = (await apiClient.post(`/posts/${postId}/comments`, {
+      const response = await apiClient.post(`/posts/${postId}/comments`, {
         content,
-      })) as { data: Comment };
+      });
       return response.data;
     },
     onSuccess: (_, { postId }) => {
