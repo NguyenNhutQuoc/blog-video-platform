@@ -176,9 +176,10 @@ export interface PostSummary {
   author: AuthorSummary;
 }
 
-// Cursor-based pagination response (for posts list)
+// Cursor-based pagination response (generic)
 export interface CursorPaginatedResponse<T> {
-  posts: T[];
+  data: T[];
+  posts?: T[]; // Backward compatibility for posts endpoint
   nextCursor: string | null;
   hasMore: boolean;
   total?: number;

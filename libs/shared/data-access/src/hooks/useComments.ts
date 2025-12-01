@@ -4,7 +4,7 @@ import {
   useInfiniteQuery,
 } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
-import type { Comment, PaginatedResponse } from '../lib/types';
+import type { Comment, CursorPaginatedResponse } from '../lib/types';
 
 // Query keys
 export const commentKeys = {
@@ -12,21 +12,25 @@ export const commentKeys = {
   byPost: (postId: string) => [...commentKeys.all, 'post', postId] as const,
 };
 
-// Get comments for a post
+// Get comments for a post (cursor-based)
 export const usePostComments = (postId: string) => {
   return useInfiniteQuery({
     queryKey: commentKeys.byPost(postId),
-    queryFn: async ({ pageParam = 1 }): Promise<PaginatedResponse<Comment>> => {
-      const response = (await apiClient.get(`/posts/${postId}/comments`, {
-        params: { page: pageParam, limit: 10 },
-      })) as PaginatedResponse<Comment>;
-      return response;
+    queryFn: async ({
+      pageParam,
+    }): Promise<CursorPaginatedResponse<Comment>> => {
+      const response = await apiClient.get<CursorPaginatedResponse<Comment>>(
+        `/posts/${postId}/comments`,
+        {
+          params: { cursor: pageParam, limit: 10 },
+        }
+      );
+      return response.data;
     },
     getNextPageParam: (lastPage) => {
-      const { page, totalPages } = lastPage.pagination;
-      return page < totalPages ? page + 1 : undefined;
+      return lastPage.hasMore ? lastPage.nextCursor : undefined;
     },
-    initialPageParam: 1,
+    initialPageParam: undefined as string | undefined,
     enabled: !!postId,
   });
 };

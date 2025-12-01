@@ -11,11 +11,16 @@ import {
   Tabs,
   Tab,
   Stack,
-  CircularProgress,
   Avatar,
 } from '@mui/material';
 import { PersonAdd, PersonRemove } from '@mui/icons-material';
-import { NavigationBar, PostCard, UserProfileCard } from '@blog/shared-ui-kit';
+import {
+  NavigationBar,
+  PostCard,
+  UserProfileCard,
+  PostCardSkeleton,
+  UserProfileCardSkeleton,
+} from '@blog/shared-ui-kit';
 import { useAuth } from '../../../providers/AuthProvider';
 import {
   useUser,
@@ -75,10 +80,23 @@ function UserProfileContent() {
           onCreatePostClick={() => router.push('/posts/new')}
           onLogoutClick={handleLogout}
         />
-        <Container maxWidth="md" sx={{ py: 8 }}>
-          <Box display="flex" justifyContent="center">
-            <CircularProgress />
-          </Box>
+        <Container maxWidth="md" sx={{ py: 4 }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              mb: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <UserProfileCardSkeleton />
+          </Paper>
+          <Stack spacing={3}>
+            <PostCardSkeleton />
+            <PostCardSkeleton hasImage={false} />
+          </Stack>
         </Container>
       </>
     );
@@ -106,7 +124,8 @@ function UserProfileContent() {
     );
   }
 
-  const posts = postsData?.pages.flatMap((page) => page.data) || [];
+  const posts =
+    postsData?.pages.flatMap((page) => page.data || page.posts) || [];
   const followers = followersData?.pages.flatMap((page) => page.data) || [];
   const following = followingData?.pages.flatMap((page) => page.data) || [];
 
@@ -222,9 +241,11 @@ function UserProfileContent() {
         {activeTab === 0 && (
           <Stack spacing={3}>
             {postsLoading ? (
-              <Box display="flex" justifyContent="center" py={8}>
-                <CircularProgress />
-              </Box>
+              <>
+                <PostCardSkeleton />
+                <PostCardSkeleton hasImage={false} />
+                <PostCardSkeleton />
+              </>
             ) : posts.length > 0 ? (
               posts.map((post) => (
                 <PostCard
@@ -312,10 +333,23 @@ export default function UserProfilePage() {
   return (
     <Suspense
       fallback={
-        <Container maxWidth="md" sx={{ py: 8 }}>
-          <Box display="flex" justifyContent="center">
-            <CircularProgress />
-          </Box>
+        <Container maxWidth="md" sx={{ py: 4 }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              mb: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <UserProfileCardSkeleton />
+          </Paper>
+          <Stack spacing={3}>
+            <PostCardSkeleton />
+            <PostCardSkeleton hasImage={false} />
+          </Stack>
         </Container>
       }
     >

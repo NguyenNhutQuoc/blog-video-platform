@@ -1,14 +1,11 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    // Basic Options
     "target": "ES2022",
     "module": "commonjs",
     "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": ".",
-
-    // Module Resolution
     "moduleResolution": "node",
     "baseUrl": ".",
     "paths": {
@@ -21,8 +18,6 @@
         "libs/backend/infrastructure/src/index.ts"
       ]
     },
-
-    // Type Checking
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -35,8 +30,6 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-
-    // Advanced
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
@@ -46,8 +39,6 @@
     "declarationMap": true,
     "sourceMap": true,
     "composite": true,
-
-    // Experimental
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },

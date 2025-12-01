@@ -18,7 +18,7 @@ import {
   FormControlLabel,
   Switch,
 } from '@mui/material';
-import { NavigationBar } from '@blog/shared-ui-kit';
+import { NavigationBar, RichTextEditor } from '@blog/shared-ui-kit';
 import { useAuth } from '../../../providers/AuthProvider';
 import { useCreatePost } from '@blog/shared-data-access';
 
@@ -183,20 +183,30 @@ export default function CreatePostPage() {
             </Box>
 
             <Box mb={3}>
+              <Typography variant="subtitle2" color="text.secondary" mb={1}>
+                Content *
+              </Typography>
               <Controller
                 name="content"
                 control={control}
                 render={({ field }) => (
-                  <TextField
-                    {...field}
-                    fullWidth
-                    label="Content"
-                    placeholder="Write your post content here..."
-                    multiline
-                    rows={12}
-                    error={!!errors.content}
-                    helperText={errors.content?.message}
-                  />
+                  <Box>
+                    <RichTextEditor
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Write your post content here..."
+                      error={!!errors.content}
+                    />
+                    {errors.content && (
+                      <Typography
+                        variant="caption"
+                        color="error"
+                        sx={{ mt: 1, display: 'block' }}
+                      >
+                        {errors.content.message}
+                      </Typography>
+                    )}
+                  </Box>
                 )}
               />
             </Box>

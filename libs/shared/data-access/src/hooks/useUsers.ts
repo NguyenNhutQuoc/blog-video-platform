@@ -9,7 +9,7 @@ import type {
   User,
   UpdateUserRequest,
   Post,
-  PaginatedResponse,
+  CursorPaginatedResponse,
 } from '../lib/types';
 
 // Query keys
@@ -36,68 +36,65 @@ export const useUser = (username: string) => {
   });
 };
 
-// Get user's posts with infinite scroll
+// Get user's posts with infinite scroll (cursor-based)
 export const useUserPosts = (username: string) => {
   return useInfiniteQuery({
     queryKey: userKeys.posts(username),
-    queryFn: async ({ pageParam = 1 }): Promise<PaginatedResponse<Post>> => {
-      const response = await apiClient.get<PaginatedResponse<Post>>(
+    queryFn: async ({ pageParam }): Promise<CursorPaginatedResponse<Post>> => {
+      const response = await apiClient.get<CursorPaginatedResponse<Post>>(
         `/users/${username}/posts`,
         {
-          params: { page: pageParam, limit: 10 },
+          params: { cursor: pageParam, limit: 10 },
         }
       );
       return response.data;
     },
     getNextPageParam: (lastPage) => {
-      const { page, totalPages } = lastPage.pagination;
-      return page < totalPages ? page + 1 : undefined;
+      return lastPage.hasMore ? lastPage.nextCursor : undefined;
     },
-    initialPageParam: 1,
+    initialPageParam: undefined as string | undefined,
     enabled: !!username,
   });
 };
 
-// Get user's followers
+// Get user's followers (cursor-based)
 export const useUserFollowers = (username: string) => {
   return useInfiniteQuery({
     queryKey: userKeys.followers(username),
-    queryFn: async ({ pageParam = 1 }): Promise<PaginatedResponse<User>> => {
-      const response = await apiClient.get<PaginatedResponse<User>>(
+    queryFn: async ({ pageParam }): Promise<CursorPaginatedResponse<User>> => {
+      const response = await apiClient.get<CursorPaginatedResponse<User>>(
         `/users/${username}/followers`,
         {
-          params: { page: pageParam, limit: 20 },
+          params: { cursor: pageParam, limit: 20 },
         }
       );
       return response.data;
     },
     getNextPageParam: (lastPage) => {
-      const { page, totalPages } = lastPage.pagination;
-      return page < totalPages ? page + 1 : undefined;
+      return lastPage.hasMore ? lastPage.nextCursor : undefined;
     },
-    initialPageParam: 1,
+    initialPageParam: undefined as string | undefined,
     enabled: !!username,
   });
 };
 
-// Get user's following
+// Get user's following (cursor-based)
 export const useUserFollowing = (username: string) => {
   return useInfiniteQuery({
     queryKey: userKeys.following(username),
-    queryFn: async ({ pageParam = 1 }): Promise<PaginatedResponse<User>> => {
-      const response = await apiClient.get<PaginatedResponse<User>>(
+    queryFn: async ({ pageParam }): Promise<CursorPaginatedResponse<User>> => {
+      const response = await apiClient.get<CursorPaginatedResponse<User>>(
         `/users/${username}/following`,
         {
-          params: { page: pageParam, limit: 20 },
+          params: { cursor: pageParam, limit: 20 },
         }
       );
       return response.data;
     },
     getNextPageParam: (lastPage) => {
-      const { page, totalPages } = lastPage.pagination;
-      return page < totalPages ? page + 1 : undefined;
+      return lastPage.hasMore ? lastPage.nextCursor : undefined;
     },
-    initialPageParam: 1,
+    initialPageParam: undefined as string | undefined,
     enabled: !!username,
   });
 };

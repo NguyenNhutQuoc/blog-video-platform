@@ -103,3 +103,5 @@ test-output
 # Next.js
 .next
 out
+
+storybook-static

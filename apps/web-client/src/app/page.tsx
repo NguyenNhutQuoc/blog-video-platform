@@ -1,15 +1,7 @@
 'use client';
 
-import {
-  Container,
-  Typography,
-  Box,
-  Tabs,
-  Tab,
-  CircularProgress,
-  Stack,
-} from '@mui/material';
-import { NavigationBar, PostCard } from '@blog/shared-ui-kit';
+import { Container, Typography, Box, Tabs, Tab, Stack } from '@mui/material';
+import { NavigationBar, PostCard, PostCardSkeleton } from '@blog/shared-ui-kit';
 import { useInfinitePosts } from '@blog/shared-data-access';
 import { useAuth } from '../providers/AuthProvider';
 import { useRouter } from 'next/navigation';
@@ -69,9 +61,11 @@ export default function HomePage() {
 
         {/* Posts Feed */}
         {isLoading ? (
-          <Box display="flex" justifyContent="center" py={8}>
-            <CircularProgress />
-          </Box>
+          <Stack spacing={3}>
+            <PostCardSkeleton />
+            <PostCardSkeleton hasImage={false} />
+            <PostCardSkeleton />
+          </Stack>
         ) : posts.length > 0 ? (
           <Stack spacing={3}>
             {posts.map((post) => (

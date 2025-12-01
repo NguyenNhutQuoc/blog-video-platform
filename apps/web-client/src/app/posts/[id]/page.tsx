@@ -366,7 +366,8 @@ function PostDetailContent() {
                   likeCount={comment.likeCount}
                 />
               ))}
-            {commentsData?.pages[0]?.data.length === 0 && (
+            {(!commentsData?.pages[0]?.data ||
+              commentsData?.pages[0]?.data.length === 0) && (
               <Typography
                 variant="body2"
                 color="text.secondary"
