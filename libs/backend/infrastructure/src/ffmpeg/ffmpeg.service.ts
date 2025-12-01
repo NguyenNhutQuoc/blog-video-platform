@@ -171,16 +171,21 @@ export class FFmpegService implements IFFmpegService {
           reject(new Error('FFmpeg not available'));
           return;
         }
-        // Get version from ffmpeg
-        const { exec } = require('child_process');
-        exec('ffmpeg -version', (error: Error | null, stdout: string) => {
-          if (error) {
+        // Get version from ffmpeg using dynamic import for ES modules
+        import('child_process')
+          .then(({ exec }) => {
+            exec('ffmpeg -version', (error: Error | null, stdout: string) => {
+              if (error) {
+                resolve('unknown');
+              } else {
+                const match = stdout.match(/ffmpeg version (\S+)/);
+                resolve(match ? match[1] : 'unknown');
+              }
+            });
+          })
+          .catch(() => {
             resolve('unknown');
-          } else {
-            const match = stdout.match(/ffmpeg version (\S+)/);
-            resolve(match ? match[1] : 'unknown');
-          }
-        });
+          });
       });
     });
   }

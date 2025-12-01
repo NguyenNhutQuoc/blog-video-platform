@@ -161,7 +161,7 @@ export class PostgresVideoRepository implements IVideoRepository {
       updateData.status = updates.status;
     }
     if (updates.hlsUrl !== undefined) {
-      updateData.hls_url = updates.hlsUrl;
+      updateData.hls_master_url = updates.hlsUrl;
     }
     if (updates.thumbnailUrl !== undefined) {
       updateData.thumbnail_url = updates.thumbnailUrl;
@@ -181,8 +181,6 @@ export class PostgresVideoRepository implements IVideoRepository {
     if (updates.error !== undefined) {
       updateData.error_message = updates.error;
     }
-
-    updateData.updated_at = new Date();
 
     await this.db
       .updateTable('videos')

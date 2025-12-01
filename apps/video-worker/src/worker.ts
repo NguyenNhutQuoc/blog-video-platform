@@ -47,6 +47,11 @@ export class VideoEncodingWorker {
     this.config = config;
     this.deps = deps;
 
+    console.log('🔧 Initializing BullMQ Worker...');
+    console.log('  Queue:', VIDEO_ENCODING_QUEUE);
+    console.log('  Redis config:', { host: config.redis.host, port: config.redis.port });
+    console.log('  Concurrency:', config.concurrency);
+
     // Ensure temp directory exists
     if (!fs.existsSync(config.tempDir)) {
       fs.mkdirSync(config.tempDir, { recursive: true });
@@ -64,12 +69,17 @@ export class VideoEncodingWorker {
       }
     );
 
+    console.log('🔧 Worker instance created, setting up event listeners...');
     this.setupEventListeners();
   }
 
   private setupEventListeners(): void {
     this.worker.on('ready', () => {
       console.log('✅ Video encoding worker ready');
+    });
+
+    this.worker.on('active', (job) => {
+      console.log(`🎬 Starting job ${job.id} for video ${job.data.videoId}`);
     });
 
     this.worker.on('completed', (job, result) => {
@@ -100,6 +110,14 @@ export class VideoEncodingWorker {
 
     this.worker.on('error', (error) => {
       console.error('❌ Worker error:', error);
+    });
+
+    this.worker.on('closed', () => {
+      console.log('🔌 Worker closed');
+    });
+
+    this.worker.on('closing', () => {
+      console.log('🔌 Worker closing...');
     });
   }
 
@@ -140,7 +158,13 @@ export class VideoEncodingWorker {
       // Step 1: Download video from MinIO (10%)
       console.log(`📥 Step 1/8: Downloading video...`);
       const localVideoPath = path.join(workDir, 'source.mp4');
-      await this.downloadFromStorage(rawFilePath, localVideoPath);
+      
+      // Parse bucket and key from rawFilePath (format: "bucket/key")
+      const [bucket, ...keyParts] = rawFilePath.split('/');
+      const key = keyParts.join('/');
+      
+      console.log(`  Downloading from bucket: ${bucket}, key: ${key}`);
+      await this.downloadFromStorage(bucket, key, localVideoPath);
       await job.updateProgress(10);
 
       // Step 2: Extract metadata (20%)
@@ -262,11 +286,12 @@ export class VideoEncodingWorker {
   }
 
   private async downloadFromStorage(
+    bucket: string,
     key: string,
     localPath: string
   ): Promise<void> {
     const stream = await this.deps.storageService.getObjectStream({
-      bucket: StorageBuckets.VIDEOS_RAW,
+      bucket,
       key,
     });
 
