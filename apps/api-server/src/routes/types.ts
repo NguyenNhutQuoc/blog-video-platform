@@ -61,3 +61,12 @@ export interface VideoRoutesDependencies {
   videoRepository: IVideoRepository;
   authMiddleware: RequestHandler;
 }
+
+export interface CategoryRoutesDependencies {
+  categoryRepository: ICategoryRepository;
+}
+
+export interface TagRoutesDependencies {
+  tagRepository: ITagRepository;
+  authMiddleware: RequestHandler;
+}

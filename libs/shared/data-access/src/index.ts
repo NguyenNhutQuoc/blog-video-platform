@@ -8,3 +8,5 @@ export * from './hooks/usePosts';
 export * from './hooks/useUsers';
 export * from './hooks/useFollows';
 export * from './hooks/useComments';
+export * from './hooks/useCategories';
+export * from './hooks/useTags';

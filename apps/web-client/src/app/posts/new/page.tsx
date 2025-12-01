@@ -13,14 +13,24 @@ import {
   Button,
   Alert,
   Paper,
-  Chip,
   Stack,
-  FormControlLabel,
-  Switch,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Chip,
+  Autocomplete,
+  CircularProgress,
 } from '@mui/material';
 import { NavigationBar, RichTextEditor } from '@blog/shared-ui-kit';
 import { useAuth } from '../../../providers/AuthProvider';
-import { useCreatePost } from '@blog/shared-data-access';
+import {
+  useCreatePost,
+  useCategories,
+  useTags,
+  type Category,
+  type Tag,
+} from '@blog/shared-data-access';
 
 const createPostSchema = z.object({
   title: z
@@ -32,9 +42,9 @@ const createPostSchema = z.object({
     .max(300, 'Excerpt must be less than 300 characters')
     .optional(),
   content: z.string().min(1, 'Content is required'),
-  tags: z.string().optional(),
   featuredImageUrl: z.string().url('Invalid URL').optional().or(z.literal('')),
-  published: z.boolean(),
+  status: z.enum(['draft', 'published']),
+  visibility: z.enum(['public', 'private', 'unlisted']),
 });
 
 type CreatePostFormData = z.infer<typeof createPostSchema>;
@@ -42,9 +52,16 @@ type CreatePostFormData = z.infer<typeof createPostSchema>;
 export default function CreatePostPage() {
   const router = useRouter();
   const { user, logout } = useAuth();
-  const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
   const createPostMutation = useCreatePost();
+
+  // Category and Tag data
+  const { data: categories = [], isLoading: categoriesLoading } =
+    useCategories();
+  const { data: tags = [], isLoading: tagsLoading } = useTags();
+
+  // Selected categories and tags (store full objects for display)
+  const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
 
   const {
     control,
@@ -56,31 +73,23 @@ export default function CreatePostPage() {
       title: '',
       excerpt: '',
       content: '',
-      tags: '',
       featuredImageUrl: '',
-      published: false,
+      status: 'draft',
+      visibility: 'public',
     },
   });
-
-  const handleAddTag = () => {
-    const tag = tagInput.trim();
-    if (tag && !tags.includes(tag) && tags.length < 5) {
-      setTags([...tags, tag]);
-      setTagInput('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove));
-  };
 
   const onSubmit = async (data: CreatePostFormData) => {
     try {
       await createPostMutation.mutateAsync({
-        ...data,
-        tags: tags.map((name) => ({ name })),
+        title: data.title,
+        content: data.content,
         excerpt: data.excerpt || undefined,
         featuredImageUrl: data.featuredImageUrl || undefined,
+        categoryIds: selectedCategories.map((c) => c.id),
+        tagIds: selectedTags.map((t) => t.id),
+        status: data.status,
+        visibility: data.visibility,
       });
       router.push('/');
     } catch (error) {
@@ -228,71 +237,136 @@ export default function CreatePostPage() {
               />
             </Box>
 
+            {/* Category Selection */}
             <Box mb={3}>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Tags (Maximum 5)
-              </Typography>
-              <Box display="flex" gap={1} mb={2}>
-                <TextField
-                  size="small"
-                  placeholder="Add a tag..."
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddTag();
-                    }
-                  }}
-                  disabled={tags.length >= 5}
-                />
-                <Button
-                  variant="outlined"
-                  onClick={handleAddTag}
-                  disabled={tags.length >= 5 || !tagInput.trim()}
-                >
-                  Add Tag
-                </Button>
-              </Box>
-              {tags.length > 0 && (
-                <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
-                  {tags.map((tag) => (
-                    <Chip
-                      key={tag}
-                      label={tag}
-                      onDelete={() => handleRemoveTag(tag)}
-                      color="primary"
-                      variant="outlined"
-                    />
-                  ))}
-                </Stack>
-              )}
+              <Autocomplete
+                multiple
+                options={categories}
+                getOptionLabel={(option) => option.name}
+                value={selectedCategories}
+                onChange={(_, newValue) => setSelectedCategories(newValue)}
+                loading={categoriesLoading}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Categories *"
+                    placeholder="Select categories..."
+                    helperText="At least one category is required"
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: (
+                        <>
+                          {categoriesLoading ? (
+                            <CircularProgress color="inherit" size={20} />
+                          ) : null}
+                          {params.InputProps.endAdornment}
+                        </>
+                      ),
+                    }}
+                  />
+                )}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => {
+                    const { key, ...tagProps } = getTagProps({ index });
+                    return (
+                      <Chip
+                        key={key}
+                        label={option.name}
+                        {...tagProps}
+                        color="primary"
+                        variant="outlined"
+                        size="small"
+                      />
+                    );
+                  })
+                }
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+              />
+            </Box>
+
+            {/* Tag Selection */}
+            <Box mb={3}>
+              <Autocomplete
+                multiple
+                options={tags}
+                getOptionLabel={(option) => option.name}
+                value={selectedTags}
+                onChange={(_, newValue) => {
+                  // Limit to 5 tags
+                  if (newValue.length <= 5) {
+                    setSelectedTags(newValue);
+                  }
+                }}
+                loading={tagsLoading}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Tags (Optional)"
+                    placeholder="Select up to 5 tags..."
+                    helperText={`${selectedTags.length}/5 tags selected`}
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: (
+                        <>
+                          {tagsLoading ? (
+                            <CircularProgress color="inherit" size={20} />
+                          ) : null}
+                          {params.InputProps.endAdornment}
+                        </>
+                      ),
+                    }}
+                  />
+                )}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => {
+                    const { key, ...tagProps } = getTagProps({ index });
+                    return (
+                      <Chip
+                        key={key}
+                        label={option.name}
+                        {...tagProps}
+                        color="secondary"
+                        variant="outlined"
+                        size="small"
+                      />
+                    );
+                  })
+                }
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                disabled={selectedTags.length >= 5}
+              />
             </Box>
 
             <Box mb={4}>
-              <Controller
-                name="published"
-                control={control}
-                render={({ field }) => (
-                  <FormControlLabel
-                    control={<Switch {...field} checked={field.value} />}
-                    label={
-                      <Box>
-                        <Typography variant="body2" fontWeight={600}>
-                          Publish immediately
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          If disabled, post will be saved as draft
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                )}
-              />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <Controller
+                  name="status"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Status</InputLabel>
+                      <Select {...field} label="Status">
+                        <MenuItem value="draft">Draft</MenuItem>
+                        <MenuItem value="published">Published</MenuItem>
+                      </Select>
+                    </FormControl>
+                  )}
+                />
+                <Controller
+                  name="visibility"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Visibility</InputLabel>
+                      <Select {...field} label="Visibility">
+                        <MenuItem value="public">Public</MenuItem>
+                        <MenuItem value="private">Private</MenuItem>
+                        <MenuItem value="unlisted">Unlisted</MenuItem>
+                      </Select>
+                    </FormControl>
+                  )}
+                />
+              </Stack>
             </Box>
 
             <Stack direction="row" spacing={2}>

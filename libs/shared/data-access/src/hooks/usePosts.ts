@@ -77,6 +77,7 @@ export const useCreatePost = () => {
 
   return useMutation({
     mutationFn: async (postData: CreatePostRequest): Promise<Post> => {
+      console.log('Creating post with data:', postData);
       const response = await apiClient.post<Post>('/posts', postData);
       return response.data;
     },

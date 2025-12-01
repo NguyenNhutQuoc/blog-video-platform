@@ -26,6 +26,8 @@ import { createAuthRoutes } from './routes/auth.routes.js';
 import { createPostsRoutes } from './routes/posts.routes.js';
 import { createUsersRoutes } from './routes/users.routes.js';
 import { createFollowsRoutes } from './routes/follows.routes.js';
+import { createCategoriesRoutes } from './routes/categories.routes.js';
+import { createTagsRoutes } from './routes/tags.routes.js';
 import type {
   IUserRepository,
   IPostRepository,
@@ -210,11 +212,22 @@ export function createApp(deps: AppDependencies): Express {
     optionalAuthMiddleware,
   });
 
+  const categoriesRoutes = createCategoriesRoutes({
+    categoryRepository: deps.categoryRepository,
+  });
+
+  const tagsRoutes = createTagsRoutes({
+    tagRepository: deps.tagRepository,
+    authMiddleware,
+  });
+
   app.use('/api/auth', authRoutes);
   app.use('/api/posts', postsRoutes);
   app.use('/api/users', usersRoutes);
   // Mount follows routes under /api/users for follow/unfollow endpoints
   app.use('/api/users', followsRoutes);
+  app.use('/api/categories', categoriesRoutes);
+  app.use('/api/tags', tagsRoutes);
 
   // 404 handler
   app.use(notFoundHandler);

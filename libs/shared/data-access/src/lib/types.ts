@@ -8,7 +8,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   username: string;
-  fullName: string;
+  fullName?: string;
 }
 
 // API response wrapper
@@ -96,13 +96,23 @@ export interface CreatePostRequest {
   content: string;
   excerpt?: string;
   featuredImageUrl?: string;
-  tags?: { name: string }[];
-  published?: boolean;
+  categoryIds: string[];
+  tagIds?: string[];
+  videoId?: string;
+  status?: 'draft' | 'published';
   visibility?: 'public' | 'private' | 'unlisted';
 }
 
-export interface UpdatePostRequest extends Partial<CreatePostRequest> {
+export interface UpdatePostRequest {
   id: string;
+  title?: string;
+  content?: string;
+  excerpt?: string;
+  featuredImageUrl?: string | null;
+  categoryIds?: string[];
+  tagIds?: string[];
+  status?: 'draft' | 'published';
+  visibility?: 'public' | 'private' | 'unlisted';
 }
 
 // Comment types
@@ -131,7 +141,7 @@ export interface Category {
   name: string;
   slug: string;
   description?: string;
-  parentId?: string;
+  color?: string;
   postCount: number;
 }
 
