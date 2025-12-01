@@ -6,7 +6,11 @@
 
 import type { Kysely } from 'kysely';
 import type { Database } from '../database/types.js';
-import type { IVideoRepository, VideoQueryOptions } from '@blog/backend/core';
+import type {
+  IVideoRepository,
+  VideoQueryOptions,
+  VideoUpdateData,
+} from '@blog/backend/core';
 import { VideoEntity } from '@blog/shared/domain';
 import {
   toDomainVideo,
@@ -148,6 +152,43 @@ export class PostgresVideoRepository implements IVideoRepository {
 
   async delete(id: string): Promise<void> {
     await this.db.deleteFrom('videos').where('id', '=', id).execute();
+  }
+
+  async update(id: string, updates: Partial<VideoUpdateData>): Promise<void> {
+    const updateData: Record<string, unknown> = {};
+
+    if (updates.status !== undefined) {
+      updateData.status = updates.status;
+    }
+    if (updates.hlsUrl !== undefined) {
+      updateData.hls_url = updates.hlsUrl;
+    }
+    if (updates.thumbnailUrl !== undefined) {
+      updateData.thumbnail_url = updates.thumbnailUrl;
+    }
+    if (updates.duration !== undefined) {
+      updateData.duration = updates.duration;
+    }
+    if (updates.width !== undefined) {
+      updateData.width = updates.width;
+    }
+    if (updates.height !== undefined) {
+      updateData.height = updates.height;
+    }
+    if (updates.processedAt !== undefined) {
+      updateData.processing_completed_at = updates.processedAt;
+    }
+    if (updates.error !== undefined) {
+      updateData.error_message = updates.error;
+    }
+
+    updateData.updated_at = new Date();
+
+    await this.db
+      .updateTable('videos')
+      .set(updateData)
+      .where('id', '=', id)
+      .execute();
   }
 
   async updateStatus(id: string, status: string): Promise<void> {

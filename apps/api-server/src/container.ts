@@ -21,6 +21,8 @@ import type {
   IPasswordHasher,
   ITokenGenerator,
   IEmailService,
+  IStorageService,
+  IVideoQueueService,
 } from '@blog/backend/core';
 import {
   PostgresUserRepository,
@@ -58,6 +60,14 @@ export interface AppContainer {
   passwordHasher: IPasswordHasher;
   tokenGenerator: ITokenGenerator;
   emailService?: IEmailService;
+  storageService?: IStorageService;
+  videoQueueService?: IVideoQueueService;
+
+  // Video processing queue function
+  queueVideoForProcessing?: (
+    videoId: string,
+    rawFilePath: string
+  ) => Promise<string>;
 
   // Middleware factories will be created in app.ts
   // as they depend on tokenGenerator
@@ -73,6 +83,12 @@ export interface ContainerDependencies {
   passwordHasher: IPasswordHasher;
   tokenGenerator: ITokenGenerator;
   emailService?: IEmailService;
+  storageService?: IStorageService;
+  videoQueueService?: IVideoQueueService;
+  queueVideoForProcessing?: (
+    videoId: string,
+    rawFilePath: string
+  ) => Promise<string>;
 }
 
 /**
@@ -112,6 +128,9 @@ export function createContainer(deps: ContainerDependencies): AppContainer {
     passwordHasher: deps.passwordHasher,
     tokenGenerator: deps.tokenGenerator,
     emailService: deps.emailService,
+    storageService: deps.storageService,
+    videoQueueService: deps.videoQueueService,
+    queueVideoForProcessing: deps.queueVideoForProcessing,
 
     // Configuration
     env: deps.env,

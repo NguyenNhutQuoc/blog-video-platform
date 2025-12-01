@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,13 +21,22 @@ import {
   Chip,
   Autocomplete,
   CircularProgress,
+  Divider,
 } from '@mui/material';
-import { NavigationBar, RichTextEditor } from '@blog/shared-ui-kit';
+import {
+  NavigationBar,
+  RichTextEditor,
+  VideoUpload,
+  VideoStatus,
+} from '@blog/shared-ui-kit';
+import type { VideoStatusData } from '@blog/shared-ui-kit';
 import { useAuth } from '../../../providers/AuthProvider';
 import {
   useCreatePost,
   useCategories,
   useTags,
+  useVideoUpload,
+  useVideoStatus,
   type Category,
   type Tag,
 } from '@blog/shared-data-access';
@@ -63,6 +72,72 @@ export default function CreatePostPage() {
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
 
+  // Video upload state
+  const [uploadedVideoId, setUploadedVideoId] = useState<string | null>(null);
+  const { generateUploadUrl, confirmUpload, isGeneratingUrl, isConfirming } =
+    useVideoUpload();
+  const { data: videoStatus } = useVideoStatus(uploadedVideoId);
+
+  // Video upload handlers
+  const handleVideoUploadStart = useCallback(
+    async (file: File) => {
+      const result = await generateUploadUrl({
+        filename: file.name,
+        mimeType: file.type,
+        fileSize: file.size,
+      });
+      return {
+        uploadUrl: result.uploadUrl,
+        videoId: result.videoId,
+      };
+    },
+    [generateUploadUrl]
+  );
+
+  const handleVideoConfirmUpload = useCallback(
+    async (videoId: string) => {
+      await confirmUpload(videoId);
+      setUploadedVideoId(videoId);
+    },
+    [confirmUpload]
+  );
+
+  const handleVideoUploadComplete = useCallback((videoId: string) => {
+    console.log('Video upload complete:', videoId);
+  }, []);
+
+  const handleVideoUploadError = useCallback((error: Error) => {
+    console.error('Video upload error:', error);
+  }, []);
+
+  const handleVideoReady = useCallback((data: VideoStatusData) => {
+    console.log('Video ready:', data);
+  }, []);
+
+  const fetchVideoStatus = useCallback(
+    async (videoId: string): Promise<VideoStatusData> => {
+      // This will use the cached data from useVideoStatus
+      if (videoStatus && videoStatus.id === videoId) {
+        return {
+          videoId: videoStatus.id,
+          status: videoStatus.status,
+          progress: videoStatus.progress,
+          thumbnailUrl: videoStatus.thumbnailUrl,
+          hlsUrl: videoStatus.hlsUrl,
+          duration: videoStatus.duration,
+          qualities: videoStatus.qualities,
+          error: videoStatus.error,
+        };
+      }
+      // Return minimal status if not cached yet
+      return {
+        videoId,
+        status: 'processing',
+      };
+    },
+    [videoStatus]
+  );
+
   const {
     control,
     handleSubmit,
@@ -90,6 +165,7 @@ export default function CreatePostPage() {
         tagIds: selectedTags.map((t) => t.id),
         status: data.status,
         visibility: data.visibility,
+        videoId: uploadedVideoId || undefined,
       });
       router.push('/');
     } catch (error) {
@@ -235,6 +311,42 @@ export default function CreatePostPage() {
                   />
                 )}
               />
+            </Box>
+
+            {/* Video Upload Section */}
+            <Box mb={3}>
+              <Divider sx={{ my: 3 }} />
+              <Typography variant="h6" gutterBottom>
+                Video (Optional)
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Upload a video to include with your post. Supported formats:
+                MP4, WebM, MOV.
+              </Typography>
+
+              {!uploadedVideoId && (
+                <VideoUpload
+                  onUploadStart={handleVideoUploadStart}
+                  onUploadComplete={handleVideoUploadComplete}
+                  onUploadError={handleVideoUploadError}
+                  onConfirmUpload={handleVideoConfirmUpload}
+                  disabled={isGeneratingUrl || isConfirming}
+                  config={{
+                    maxFileSize: 2 * 1024 * 1024 * 1024, // 2GB
+                    maxDuration: 30 * 60, // 30 minutes
+                  }}
+                />
+              )}
+
+              {uploadedVideoId && (
+                <VideoStatus
+                  videoId={uploadedVideoId}
+                  onFetchStatus={fetchVideoStatus}
+                  onReady={handleVideoReady}
+                  showDetails
+                />
+              )}
+              <Divider sx={{ my: 3 }} />
             </Box>
 
             {/* Category Selection */}

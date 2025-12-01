@@ -11,12 +11,6 @@ export interface RegisterRequest {
   fullName?: string;
 }
 
-// API response wrapper
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}
-
 // Auth tokens
 export interface AuthTokens {
   accessToken: string;
@@ -117,6 +111,15 @@ export interface Post {
   excerpt?: string | null;
   featuredImageUrl?: string | null;
   videoId?: string | null;
+  video?: {
+    id: string;
+    status: string;
+    hlsUrl?: string | null;
+    thumbnailUrl?: string | null;
+    duration?: number | null;
+    width?: number | null;
+    height?: number | null;
+  } | null;
   status: 'draft' | 'published' | 'archived';
   visibility: 'public' | 'private' | 'unlisted';
   author: PostAuthor;

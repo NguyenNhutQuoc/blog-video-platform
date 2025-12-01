@@ -7,42 +7,68 @@
 import type { VideoRow, NewVideo, VideoUpdate } from '../database/types.js';
 import { VideoEntity, type Video } from '@blog/shared/domain';
 
+// Type for the row after CamelCasePlugin transforms it
+interface CamelCaseVideoRow {
+  id: string;
+  postId: string | null;
+  originalFilename: string;
+  fileSize: number;
+  mimeType: string;
+  status: string;
+  duration: number | null;
+  width: number | null;
+  height: number | null;
+  originalCodec: string | null;
+  originalBitrate: number | null;
+  rawFilePath: string | null;
+  hlsMasterUrl: string | null;
+  thumbnailUrl: string | null;
+  availableQualities: Record<string, unknown>[];
+  retryCount: number;
+  errorMessage: string | null;
+  uploadedAt: Date | null;
+  processingCompletedAt: Date | null;
+  createdAt: Date;
+}
+
 /**
  * Map database row to domain entity
  */
 export function toDomainVideo(row: VideoRow): VideoEntity {
-  // CamelCasePlugin converts DB columns to camelCase
+  // Cast to camelCase type since CamelCasePlugin transforms the row
+  const camelRow = row as unknown as CamelCaseVideoRow;
+
   const video: Video = {
-    id: row.id,
-    postId: row.postId ?? null,
-    originalFilename: row.originalFilename,
-    fileSize: row.fileSize,
-    mimeType: row.mimeType,
-    status: row.status as
+    id: camelRow.id,
+    postId: camelRow.postId ?? null,
+    originalFilename: camelRow.originalFilename,
+    fileSize: camelRow.fileSize,
+    mimeType: camelRow.mimeType,
+    status: camelRow.status as
       | 'uploading'
       | 'processing'
       | 'ready'
       | 'failed'
       | 'cancelled',
-    duration: row.duration ?? null,
-    width: row.width ?? null,
-    height: row.height ?? null,
-    originalCodec: row.originalCodec ?? null,
-    originalBitrate: row.originalBitrate ?? null,
-    rawFilePath: row.rawFilePath ?? null,
-    hlsMasterUrl: row.hlsMasterUrl ?? null,
-    thumbnailUrl: row.thumbnailUrl ?? null,
-    availableQualities: (row.availableQualities ?? []) as unknown as (
+    duration: camelRow.duration ?? null,
+    width: camelRow.width ?? null,
+    height: camelRow.height ?? null,
+    originalCodec: camelRow.originalCodec ?? null,
+    originalBitrate: camelRow.originalBitrate ?? null,
+    rawFilePath: camelRow.rawFilePath ?? null,
+    hlsMasterUrl: camelRow.hlsMasterUrl ?? null,
+    thumbnailUrl: camelRow.thumbnailUrl ?? null,
+    availableQualities: (camelRow.availableQualities ?? []) as unknown as (
       | '1080p'
       | '720p'
       | '480p'
       | '360p'
     )[],
-    retryCount: row.retryCount,
-    errorMessage: row.errorMessage ?? null,
-    uploadedAt: row.uploadedAt ?? null,
-    processingCompletedAt: row.processingCompletedAt ?? null,
-    createdAt: row.createdAt,
+    retryCount: camelRow.retryCount,
+    errorMessage: camelRow.errorMessage ?? null,
+    uploadedAt: camelRow.uploadedAt ?? null,
+    processingCompletedAt: camelRow.processingCompletedAt ?? null,
+    createdAt: camelRow.createdAt,
   };
 
   return new VideoEntity(video);

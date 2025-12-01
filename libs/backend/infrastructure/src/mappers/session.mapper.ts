@@ -11,24 +11,39 @@ import type {
 } from '../database/types.js';
 import { SessionEntity, type Session } from '@blog/shared/domain';
 
+// Type for the row after CamelCasePlugin transforms it
+interface CamelCaseSessionRow {
+  id: string;
+  userId: string;
+  token: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  deviceInfo: Record<string, unknown> | null;
+  expiresAt: Date;
+  lastActiveAt: Date;
+  createdAt: Date;
+}
+
 /**
  * Map database row to domain entity
  */
 export function toDomainSession(row: SessionRow): SessionEntity {
-  // CamelCasePlugin converts DB columns to camelCase
+  // Cast to camelCase type since CamelCasePlugin transforms the row
+  const camelRow = row as unknown as CamelCaseSessionRow;
+
   const session: Session = {
-    id: row.id,
-    userId: row.userId,
-    refreshToken: row.token,
-    userAgent: row.userAgent ?? null,
-    ipAddress: row.ipAddress ?? null,
+    id: camelRow.id,
+    userId: camelRow.userId,
+    refreshToken: camelRow.token,
+    userAgent: camelRow.userAgent ?? null,
+    ipAddress: camelRow.ipAddress ?? null,
     deviceName:
-      ((row.deviceInfo as Record<string, unknown> | null)?.deviceName as
+      ((camelRow.deviceInfo as Record<string, unknown> | null)?.deviceName as
         | string
         | null) ?? null,
-    lastActiveAt: row.lastActiveAt,
-    expiresAt: row.expiresAt,
-    createdAt: row.createdAt,
+    lastActiveAt: camelRow.lastActiveAt,
+    expiresAt: camelRow.expiresAt,
+    createdAt: camelRow.createdAt,
   };
 
   return SessionEntity.fromPersistence(session);

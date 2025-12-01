@@ -48,6 +48,11 @@ export interface IVideoRepository {
   save(video: VideoEntity): Promise<void>;
 
   /**
+   * Update video fields by ID
+   */
+  update(id: string, updates: Partial<VideoUpdateData>): Promise<void>;
+
+  /**
    * Delete video (and all associated files)
    */
   delete(id: string): Promise<void>;
@@ -87,4 +92,18 @@ export interface VideoQueryOptions {
   offset?: number;
   orderBy?: 'createdAt' | 'duration' | 'viewCount';
   orderDir?: 'asc' | 'desc';
+}
+
+/**
+ * Video Update Data
+ */
+export interface VideoUpdateData {
+  status: string;
+  hlsUrl?: string;
+  thumbnailUrl?: string;
+  duration?: number;
+  width?: number;
+  height?: number;
+  processedAt?: Date;
+  error?: string;
 }

@@ -1,0 +1,41 @@
+{
+  "name": "video-worker",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/video-worker/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "tmp/apps/video-worker/build",
+        "main": "apps/video-worker/src/main.ts",
+        "tsConfig": "apps/video-worker/tsconfig.json",
+        "rootDir": ".",
+        "assets": []
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx tsx watch apps/video-worker/src/main.ts",
+        "cwd": "."
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/video-worker/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/apps/video-worker"],
+      "options": {
+        "jestConfig": "apps/video-worker/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": ["scope:worker", "type:app"]
+}

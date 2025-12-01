@@ -7,16 +7,26 @@
 import type { FollowRow, NewFollow } from '../database/types.js';
 import { FollowEntity, type Follow } from '@blog/shared/domain';
 
+// Type for the row after CamelCasePlugin transforms it
+interface CamelCaseFollowRow {
+  id: string;
+  followerId: string;
+  followingId: string;
+  createdAt: Date;
+}
+
 /**
  * Map database row to domain entity
  */
 export function toDomainFollow(row: FollowRow): FollowEntity {
-  // CamelCasePlugin converts DB columns to camelCase
+  // Cast to camelCase type since CamelCasePlugin transforms the row
+  const camelRow = row as unknown as CamelCaseFollowRow;
+
   const follow: Follow = {
-    id: row.id,
-    followerId: row.followerId,
-    followingId: row.followingId,
-    createdAt: row.createdAt,
+    id: camelRow.id,
+    followerId: camelRow.followerId,
+    followingId: camelRow.followingId,
+    createdAt: camelRow.createdAt,
   };
 
   return FollowEntity.fromPersistence(follow);

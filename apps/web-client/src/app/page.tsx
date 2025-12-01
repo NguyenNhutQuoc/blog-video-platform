@@ -21,6 +21,8 @@ export default function HomePage() {
   const posts =
     data?.pages.flatMap((page) => page.posts ?? page.data ?? []) || [];
 
+  console.log('Rendered HomePage with posts:', posts);
+
   const handleLogout = async () => {
     await logout();
     router.push('/');

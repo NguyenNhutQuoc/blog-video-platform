@@ -57,14 +57,15 @@ export function createTagsRoutes(deps: TagRoutesDependencies): Router {
         tags = await deps.tagRepository.findAll();
       }
 
-      res.json(
-        tags.map((tag) => ({
-          id: tag.id,
-          name: tag.name,
-          slug: tag.slug,
-          usageCount: tag.usageCount,
-        }))
-      );
+      const tagDtos = tags.map((tag) => ({
+        id: tag.id,
+        name: tag.name,
+        slug: tag.slug,
+        usageCount: tag.usageCount,
+      }));
+      res.json({
+        data: tagDtos,
+      });
     })
   );
 

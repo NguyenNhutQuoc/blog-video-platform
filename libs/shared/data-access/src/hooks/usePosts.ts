@@ -53,6 +53,7 @@ export const useInfinitePosts = (filters: Omit<PostFilters, 'cursor'> = {}) => {
         params: { ...filters, cursor: pageParam },
       });
       // Response interceptor already returns response.data
+      console.log('Fetched page:', response.data);
       return response.data;
     },
     getNextPageParam: (lastPage) => {

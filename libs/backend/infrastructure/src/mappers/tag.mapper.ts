@@ -7,18 +7,29 @@
 import type { TagRow, NewTag, TagUpdate } from '../database/types.js';
 import { TagEntity, type Tag } from '@blog/shared/domain';
 
+// Type for the row after CamelCasePlugin transforms it
+interface CamelCaseTagRow {
+  id: string;
+  name: string;
+  slug: string;
+  usageCount: number;
+  createdAt: Date;
+}
+
 /**
  * Map database row to domain entity
  */
 export function toDomainTag(row: TagRow): TagEntity {
-  // CamelCasePlugin converts DB columns to camelCase
+  // Cast to camelCase type since CamelCasePlugin transforms the row
+  const camelRow = row as unknown as CamelCaseTagRow;
+
   const tag: Tag = {
-    id: row.id,
-    name: row.name,
-    slug: row.slug,
-    usageCount: row.usageCount,
-    createdAt: row.createdAt,
-    updatedAt: row.createdAt, // Schema doesn't have updated_at
+    id: camelRow.id,
+    name: camelRow.name,
+    slug: camelRow.slug,
+    usageCount: camelRow.usageCount,
+    createdAt: camelRow.createdAt,
+    updatedAt: camelRow.createdAt, // Schema doesn't have updated_at
   };
 
   return TagEntity.fromPersistence(tag);

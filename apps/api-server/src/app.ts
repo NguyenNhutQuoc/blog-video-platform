@@ -28,6 +28,7 @@ import { createUsersRoutes } from './routes/users.routes.js';
 import { createFollowsRoutes } from './routes/follows.routes.js';
 import { createCategoriesRoutes } from './routes/categories.routes.js';
 import { createTagsRoutes } from './routes/tags.routes.js';
+import { createVideosRoutes } from './routes/videos.routes.js';
 import type {
   IUserRepository,
   IPostRepository,
@@ -35,11 +36,14 @@ import type {
   ICategoryRepository,
   ITagRepository,
   IFollowRepository,
+  IVideoRepository,
   ITokenGenerator,
   IPasswordHasher,
   IEmailVerificationTokenRepository,
   IPasswordResetTokenRepository,
   IEmailService,
+  IStorageService,
+  IVideoQueueService,
 } from '@blog/backend/core';
 
 export interface AppDependencies {
@@ -50,12 +54,19 @@ export interface AppDependencies {
   categoryRepository: ICategoryRepository;
   tagRepository: ITagRepository;
   followRepository: IFollowRepository;
+  videoRepository: IVideoRepository;
   tokenGenerator: ITokenGenerator;
   passwordHasher: IPasswordHasher;
   // Optional dependencies
   emailVerificationTokenRepository?: IEmailVerificationTokenRepository;
   passwordResetTokenRepository?: IPasswordResetTokenRepository;
   emailService?: IEmailService;
+  storageService?: IStorageService;
+  videoQueueService?: IVideoQueueService;
+  queueVideoForProcessing?: (
+    videoId: string,
+    rawFilePath: string
+  ) => Promise<string>;
 }
 
 export function createApp(deps: AppDependencies): Express {
@@ -221,6 +232,19 @@ export function createApp(deps: AppDependencies): Express {
     authMiddleware,
   });
 
+  // Video routes (only if storage service is configured)
+  const videosRoutes =
+    deps.storageService && deps.queueVideoForProcessing
+      ? createVideosRoutes({
+          videoRepository: deps.videoRepository,
+          userRepository: deps.userRepository,
+          storageService: deps.storageService,
+          videoQueueService: deps.videoQueueService,
+          authMiddleware,
+          queueVideoForProcessing: deps.queueVideoForProcessing,
+        })
+      : null;
+
   app.use('/api/auth', authRoutes);
   app.use('/api/posts', postsRoutes);
   app.use('/api/users', usersRoutes);
@@ -228,6 +252,11 @@ export function createApp(deps: AppDependencies): Express {
   app.use('/api/users', followsRoutes);
   app.use('/api/categories', categoriesRoutes);
   app.use('/api/tags', tagsRoutes);
+
+  // Mount video routes if configured
+  if (videosRoutes) {
+    app.use('/api/videos', videosRoutes);
+  }
 
   // 404 handler
   app.use(notFoundHandler);

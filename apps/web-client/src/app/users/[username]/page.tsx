@@ -29,6 +29,9 @@ import {
   useUnfollowUser,
   useUserFollowers,
   useUserFollowing,
+  Post,
+  User,
+  CursorPaginatedResponse,
 } from '@blog/shared-data-access';
 
 function UserProfileContent() {
@@ -125,9 +128,17 @@ function UserProfileContent() {
   }
 
   const posts =
-    postsData?.pages.flatMap((page) => page.data || page.posts) || [];
-  const followers = followersData?.pages.flatMap((page) => page.data) || [];
-  const following = followingData?.pages.flatMap((page) => page.data) || [];
+    postsData?.pages.flatMap(
+      (page: CursorPaginatedResponse<Post>) => page.data || page.posts
+    ) || [];
+  const followers =
+    followersData?.pages.flatMap(
+      (page: CursorPaginatedResponse<User>) => page.data
+    ) || [];
+  const following =
+    followingData?.pages.flatMap(
+      (page: CursorPaginatedResponse<User>) => page.data
+    ) || [];
 
   return (
     <>
@@ -247,7 +258,7 @@ function UserProfileContent() {
                 <PostCardSkeleton />
               </>
             ) : posts.length > 0 ? (
-              posts.map((post) => (
+              posts.map((post: Post) => (
                 <PostCard
                   key={post.id}
                   id={post.id}
@@ -259,7 +270,12 @@ function UserProfileContent() {
                     fullName: post.author?.fullName ?? null,
                     avatarUrl: post.author?.avatarUrl ?? null,
                   }}
-                  tags={post.tags?.map((tag) => tag.name) ?? []}
+                  tags={
+                    post.tags?.map(
+                      (tag: { id: string; name: string; slug: string }) =>
+                        tag.name
+                    ) ?? []
+                  }
                   likeCount={post.likeCount}
                   commentCount={post.commentCount}
                   createdAt={post.createdAt}
@@ -278,7 +294,7 @@ function UserProfileContent() {
         {activeTab === 1 && (
           <Stack spacing={2}>
             {followers.length > 0 ? (
-              followers.map((follower) => (
+              followers.map((follower: User) => (
                 <UserProfileCard
                   key={follower.id}
                   username={follower.username}
@@ -303,7 +319,7 @@ function UserProfileContent() {
         {activeTab === 2 && (
           <Stack spacing={2}>
             {following.length > 0 ? (
-              following.map((followedUser) => (
+              following.map((followedUser: User) => (
                 <UserProfileCard
                   key={followedUser.id}
                   username={followedUser.username}

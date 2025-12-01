@@ -71,6 +71,22 @@ const EnvSchema = z.object({
     .default('false')
     .transform((val) => val === 'true'),
 
+  // MinIO / S3 Configuration
+  MINIO_ENDPOINT: z.string().default('localhost'),
+  MINIO_PORT: z.string().default('9000').transform(Number),
+  MINIO_USE_SSL: z
+    .string()
+    .default('false')
+    .transform((val) => val === 'true'),
+  MINIO_ACCESS_KEY: z.string().default('minio_admin'),
+  MINIO_SECRET_KEY: z.string().default('minio_password_change_in_production'),
+  MINIO_PUBLIC_URL: z.string().optional(),
+
+  // Redis Configuration (for BullMQ)
+  REDIS_HOST: z.string().default('localhost'),
+  REDIS_PORT: z.string().default('6379').transform(Number),
+  REDIS_PASSWORD: z.string().default('redis_password_change_in_production'),
+
   // CORS
   CORS_ORIGIN: z.string().default('http://localhost:3001'),
 

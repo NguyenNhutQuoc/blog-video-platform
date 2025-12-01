@@ -17,6 +17,8 @@ import type {
   IPasswordResetTokenRepository,
   ILoginAttemptRepository,
   IEmailService,
+  IStorageService,
+  IVideoQueueService,
 } from '@blog/backend/core';
 
 export interface AuthRoutesDependencies {
@@ -59,7 +61,18 @@ export interface FollowRoutesDependencies {
 
 export interface VideoRoutesDependencies {
   videoRepository: IVideoRepository;
+  userRepository: IUserRepository;
+  storageService: IStorageService;
+  videoQueueService?: IVideoQueueService; // For real-time progress tracking
   authMiddleware: RequestHandler;
+  /**
+   * Function to queue video for encoding
+   * Provided by infrastructure layer (BullMQ)
+   */
+  queueVideoForProcessing: (
+    videoId: string,
+    rawFilePath: string
+  ) => Promise<string>;
 }
 
 export interface CategoryRoutesDependencies {

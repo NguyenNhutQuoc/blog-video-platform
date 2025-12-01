@@ -1,0 +1,26 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "../..",
+    "rootDir": "../..",
+    "outDir": "../../tmp/apps/video-worker/build",
+    "tsBuildInfoFile": "../../tmp/apps/video-worker/build/tsconfig.tsbuildinfo",
+    "composite": false,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../../libs/backend/infrastructure"
+    },
+    {
+      "path": "../../libs/backend/core"
+    },
+    {
+      "path": "../../libs/shared/domain"
+    }
+  ],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
+}

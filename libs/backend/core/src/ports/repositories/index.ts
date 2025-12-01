@@ -36,6 +36,7 @@ export type {
 export type {
   IVideoRepository,
   VideoQueryOptions,
+  VideoUpdateData,
 } from './video.repository.interface.js';
 export type { ISessionRepository } from './session.repository.interface.js';
 export type {

@@ -125,6 +125,7 @@ export class ListPostsUseCase {
 
     // Get unique author IDs
     const authorIds = [...new Set(posts.map((p) => p.toJSON().authorId))];
+    console.log('ListPostsUseCase fetching authors for IDs:', posts);
     const authors = await this.deps.userRepository.findByIds(authorIds);
     const authorMap = new Map(authors.map((a) => [a.toJSON().id, a]));
 
@@ -156,6 +157,8 @@ export class ListPostsUseCase {
         },
       };
     });
+
+    console.log('ListPostsUseCase fetched posts:', postSummaries);
 
     // Calculate next cursor
     const nextCursor =

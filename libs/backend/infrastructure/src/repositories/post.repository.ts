@@ -123,6 +123,7 @@ export class PostgresPostRepository implements IPostRepository {
     query = query.limit(options?.limit ?? 20);
 
     const rows = await query.execute();
+    console.log('findPublished retrieved rows:', rows);
     return rows.map(toDomainPost);
   }
 

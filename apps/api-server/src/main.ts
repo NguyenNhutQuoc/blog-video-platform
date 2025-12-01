@@ -10,6 +10,8 @@ import {
   getPool,
   createPasswordHasher,
   createTokenGenerator,
+  createMinIOService,
+  createVideoQueueService,
 } from '@blog/backend/infrastructure';
 
 async function main() {
@@ -42,6 +44,52 @@ async function main() {
       refreshTokenSecret: env.JWT_REFRESH_SECRET ?? env.JWT_SECRET + '-refresh',
     });
 
+    // Initialize MinIO storage service
+    let storageService:
+      | Awaited<ReturnType<typeof createMinIOService>>
+      | undefined;
+    let videoQueueService:
+      | ReturnType<typeof createVideoQueueService>
+      | undefined;
+    let queueVideoForProcessing:
+      | ((videoId: string, rawFilePath: string) => Promise<string>)
+      | undefined;
+
+    try {
+      storageService = await createMinIOService({
+        endPoint: env.MINIO_ENDPOINT,
+        port: env.MINIO_PORT,
+        useSSL: env.MINIO_USE_SSL,
+        accessKey: env.MINIO_ACCESS_KEY,
+        secretKey: env.MINIO_SECRET_KEY,
+        publicUrl: env.MINIO_PUBLIC_URL,
+      });
+      console.log('📦 MinIO storage service initialized');
+
+      // Initialize BullMQ queue service
+      videoQueueService = createVideoQueueService({
+        redis: {
+          host: env.REDIS_HOST,
+          port: env.REDIS_PORT,
+          password: env.REDIS_PASSWORD,
+        },
+      });
+      console.log('📤 BullMQ video queue service initialized');
+
+      // Create queue function for use cases
+      queueVideoForProcessing = async (
+        videoId: string,
+        rawFilePath: string
+      ) => {
+        return videoQueueService!.addEncodingJob({ videoId, rawFilePath });
+      };
+    } catch (error) {
+      console.warn(
+        '⚠️ Video services not available, video features disabled:',
+        error
+      );
+    }
+
     // Build dependency container
     const container = createContainer({
       db,
@@ -49,6 +97,9 @@ async function main() {
       env,
       passwordHasher,
       tokenGenerator,
+      storageService,
+      videoQueueService,
+      queueVideoForProcessing,
     });
 
     // Create Express app
@@ -60,12 +111,16 @@ async function main() {
       categoryRepository: container.categoryRepository,
       tagRepository: container.tagRepository,
       followRepository: container.followRepository,
+      videoRepository: container.videoRepository,
       passwordHasher: container.passwordHasher,
       tokenGenerator: container.tokenGenerator,
       emailVerificationTokenRepository:
         container.emailVerificationTokenRepository,
       passwordResetTokenRepository: container.passwordResetTokenRepository,
       emailService: container.emailService,
+      storageService: container.storageService,
+      videoQueueService: container.videoQueueService,
+      queueVideoForProcessing: container.queueVideoForProcessing,
     });
 
     // Start server
@@ -73,6 +128,11 @@ async function main() {
       console.log(`✅ API Server running at http://${env.HOST}:${env.PORT}`);
       console.log(`📍 Health check: http://${env.HOST}:${env.PORT}/health`);
       console.log(`🔐 Auth endpoints: http://${env.HOST}:${env.PORT}/api/auth`);
+      if (storageService && videoQueueService) {
+        console.log(
+          `🎬 Video endpoints: http://${env.HOST}:${env.PORT}/api/videos`
+        );
+      }
       if (env.NODE_ENV !== 'production') {
         console.log(`📚 API Docs: http://${env.HOST}:${env.PORT}/api-docs`);
       }
@@ -81,6 +141,12 @@ async function main() {
     // Graceful shutdown
     const shutdown = async () => {
       console.log('\n🛑 Shutting down gracefully...');
+
+      // Close queue service
+      if (videoQueueService) {
+        await videoQueueService.close();
+      }
+
       server.close(async () => {
         console.log('👋 Server closed');
         process.exit(0);

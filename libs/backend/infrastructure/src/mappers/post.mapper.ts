@@ -7,31 +7,56 @@
 import type { PostRow, NewPost, PostUpdate } from '../database/types.js';
 import { PostEntity, type Post } from '@blog/shared/domain';
 
+// Type for the row after CamelCasePlugin transforms it
+interface CamelCasePostRow {
+  id: string;
+  authorId: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string | null;
+  featuredImageUrl: string | null;
+  videoId: string | null;
+  status: string;
+  visibility: string;
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  bookmarkCount: number;
+  embedding: number[] | null;
+  publishedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+}
+
 /**
  * Map database row to domain entity
  */
 export function toDomainPost(row: PostRow): PostEntity {
-  // CamelCasePlugin converts DB columns to camelCase
+  // Cast to camelCase type since CamelCasePlugin transforms the row
+  const camelRow = row as unknown as CamelCasePostRow;
+
   const post: Post = {
-    id: row.id,
-    authorId: row.authorId,
-    title: row.title,
-    slug: row.slug,
-    content: row.content,
-    excerpt: row.excerpt ?? null,
-    featuredImageUrl: row.featuredImageUrl ?? null,
-    videoId: row.videoId ?? null,
-    status: row.status as 'draft' | 'published' | 'archived',
-    visibility: row.visibility as 'public' | 'private' | 'unlisted',
-    viewCount: row.viewCount,
-    likeCount: row.likeCount,
-    commentCount: row.commentCount,
-    bookmarkCount: row.bookmarkCount,
-    embedding: row.embedding ?? null,
-    publishedAt: row.publishedAt ?? null,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-    deletedAt: row.deletedAt ?? null,
+    id: camelRow.id,
+    authorId: camelRow.authorId,
+    title: camelRow.title,
+    slug: camelRow.slug,
+    content: camelRow.content,
+    excerpt: camelRow.excerpt ?? null,
+    featuredImageUrl: camelRow.featuredImageUrl ?? null,
+    videoId: camelRow.videoId ?? null,
+    status: camelRow.status as 'draft' | 'published' | 'archived',
+    visibility: camelRow.visibility as 'public' | 'private' | 'unlisted',
+    viewCount: camelRow.viewCount,
+    likeCount: camelRow.likeCount,
+    commentCount: camelRow.commentCount,
+    bookmarkCount: camelRow.bookmarkCount,
+    embedding: camelRow.embedding ?? null,
+    publishedAt: camelRow.publishedAt ?? null,
+    createdAt: camelRow.createdAt,
+    updatedAt: camelRow.updatedAt,
+    deletedAt: camelRow.deletedAt ?? null,
   };
 
   return new PostEntity(post);

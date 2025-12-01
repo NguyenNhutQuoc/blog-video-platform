@@ -30,6 +30,7 @@ import {
   NavigationBar,
   UserProfileCard,
   CommentCard,
+  VideoPlayer,
 } from '@blog/shared-ui-kit';
 import { useAuth } from '../../../providers/AuthProvider';
 import {
@@ -38,6 +39,8 @@ import {
   useCreateComment,
   useLikePost,
   useUnlikePost,
+  Comment,
+  CursorPaginatedResponse,
 } from '@blog/shared-data-access';
 import { formatDate } from '@blog/shared-utils';
 
@@ -216,8 +219,28 @@ function PostDetailContent() {
             />
           </Box>
 
-          {/* Featured Image */}
-          {post.featuredImageUrl && (
+          {/* Video Player (if post has video) */}
+          {post.video && post.video.hlsUrl && (
+            <Box mb={3}>
+              <VideoPlayer
+                src={post.video.hlsUrl}
+                poster={
+                  post.video.thumbnailUrl ?? post.featuredImageUrl ?? undefined
+                }
+                title={post.title}
+                onError={(error: Error) => console.error('Video error:', error)}
+              />
+              {post.video.duration && (
+                <Typography variant="caption" color="text.secondary" mt={1}>
+                  Duration: {Math.floor(post.video.duration / 60)}:
+                  {(post.video.duration % 60).toString().padStart(2, '0')}
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          {/* Featured Image (only if no video) */}
+          {!post.video?.hlsUrl && post.featuredImageUrl && (
             <Box
               component="img"
               src={post.featuredImageUrl}
@@ -288,22 +311,24 @@ function PostDetailContent() {
           {/* Tags */}
           {post.tags && post.tags.length > 0 && (
             <Stack direction="row" spacing={1} mb={3} flexWrap="wrap" gap={1}>
-              {post.tags.map((tag) => (
-                <Typography
-                  key={tag.id}
-                  variant="body2"
-                  sx={{
-                    px: 2,
-                    py: 0.5,
-                    borderRadius: 20,
-                    bgcolor: 'primary.light',
-                    color: 'primary.main',
-                    fontWeight: 500,
-                  }}
-                >
-                  #{tag.name}
-                </Typography>
-              ))}
+              {post.tags.map(
+                (tag: { id: string; name: string; slug: string }) => (
+                  <Typography
+                    key={tag.id}
+                    variant="body2"
+                    sx={{
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: 20,
+                      bgcolor: 'primary.light',
+                      color: 'primary.main',
+                      fontWeight: 500,
+                    }}
+                  >
+                    #{tag.name}
+                  </Typography>
+                )
+              )}
             </Stack>
           )}
 
@@ -396,8 +421,8 @@ function PostDetailContent() {
           {/* Comments List */}
           <Stack spacing={3}>
             {commentsData?.pages
-              .flatMap((page) => page.data)
-              .map((comment) => (
+              .flatMap((page: CursorPaginatedResponse<Comment>) => page.data)
+              .map((comment: Comment) => (
                 <CommentCard
                   key={comment.id}
                   id={comment.id}

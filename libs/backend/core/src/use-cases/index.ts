@@ -16,3 +16,6 @@ export * from './users/index.js';
 
 // Follow Use Cases
 export * from './follows/index.js';
+
+// Video Use Cases
+export * from './videos/index.js';

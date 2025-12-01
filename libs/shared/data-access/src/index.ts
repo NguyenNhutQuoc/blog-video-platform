@@ -10,3 +10,4 @@ export * from './hooks/useFollows';
 export * from './hooks/useComments';
 export * from './hooks/useCategories';
 export * from './hooks/useTags';
+export * from './hooks/useVideos';
