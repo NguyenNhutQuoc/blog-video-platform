@@ -286,6 +286,7 @@ export class PostEntity {
       excerpt,
       featuredImageUrl: data.featuredImageUrl ?? null,
       videoId: data.videoId ?? null,
+      video: null,
       status: data.status ?? PostStatus.DRAFT,
       visibility: data.visibility ?? PostVisibility.PUBLIC,
       viewCount: 0,

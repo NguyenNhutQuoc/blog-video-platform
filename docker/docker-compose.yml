@@ -150,6 +150,50 @@ services:
       - blog-network
 
   # ===================================================
+  # 7. Video Worker (Video Encoding Service)
+  # ===================================================
+  video-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    container_name: blog-video-worker
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # Database
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: blog_platform
+      DATABASE_USER: blog_user
+      DATABASE_PASSWORD: blog_password_change_in_production
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password_change_in_production
+      # MinIO
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: 'false'
+      MINIO_ACCESS_KEY: minio_admin
+      MINIO_SECRET_KEY: minio_password_change_in_production
+      # Worker
+      WORKER_CONCURRENCY: 2
+      TEMP_DIR: /app/temp
+      FFMPEG_PATH: /usr/bin/ffmpeg
+      FFPROBE_PATH: /usr/bin/ffprobe
+    volumes:
+      - worker_temp:/app/temp
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - blog-network
+
+  # ===================================================
   # 9. pgAdmin (Optional - Database Management)
   # ===================================================
   pgadmin:
@@ -220,3 +264,7 @@ volumes:
   pgadmin_data:
     driver: local
     name: blog-pgadmin-data
+
+  worker_temp:
+    driver: local
+    name: blog-worker-temp

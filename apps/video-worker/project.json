@@ -5,14 +5,22 @@
   "projectType": "application",
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
+      "executor": "@nx/esbuild:esbuild",
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "tmp/apps/video-worker/build",
         "main": "apps/video-worker/src/main.ts",
         "tsConfig": "apps/video-worker/tsconfig.json",
-        "rootDir": ".",
-        "assets": []
+        "format": ["esm"],
+        "bundle": true,
+        "platform": "node",
+        "target": "node20",
+        "minify": false,
+        "skipTypeCheck": false,
+        "external": ["bullmq", "ioredis", "pg", "pg-native"],
+        "esbuildOptions": {
+          "sourcemap": true
+        }
       }
     },
     "serve": {
