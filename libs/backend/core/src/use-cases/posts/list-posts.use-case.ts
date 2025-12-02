@@ -39,6 +39,16 @@ export interface PostSummary {
   slug: string;
   excerpt: string | null;
   featuredImageUrl: string | null;
+  videoId: string | null;
+  video?: {
+    id: string;
+    status: string;
+    hlsUrl: string | null;
+    thumbnailUrl: string | null;
+    duration: number | null;
+    width: number | null;
+    height: number | null;
+  } | null;
   status: string;
   visibility: string;
   viewCount: number;
@@ -142,6 +152,8 @@ export class ListPostsUseCase {
         slug: postData.slug,
         excerpt: postData.excerpt,
         featuredImageUrl: postData.featuredImageUrl,
+        videoId: postData.videoId,
+        video: postData.video ?? null,
         status: postData.status,
         visibility: postData.visibility,
         viewCount: postData.viewCount,

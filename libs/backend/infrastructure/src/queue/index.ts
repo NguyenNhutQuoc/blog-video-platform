@@ -3,3 +3,4 @@
  */
 
 export * from './video-queue.service.js';
+export * from './quality-retry-queue.service.js';

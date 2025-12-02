@@ -78,6 +78,22 @@ const PostVisibilitySchema = z.enum([
 // ENTITY SCHEMA
 // =====================================================
 
+/**
+ * Video Schema (for embedded video data in Post)
+ */
+const VideoSchema = z
+  .object({
+    id: z.string().uuid(),
+    status: z.string(),
+    hlsUrl: z.string().url().nullable().default(null),
+    thumbnailUrl: z.string().url().nullable().default(null),
+    duration: z.number().nullable().default(null),
+    width: z.number().nullable().default(null),
+    height: z.number().nullable().default(null),
+  })
+  .nullable()
+  .default(null);
+
 export const PostSchema = z.object({
   id: z.string().uuid(),
   authorId: z.string().uuid(),
@@ -87,6 +103,7 @@ export const PostSchema = z.object({
   excerpt: ExcerptSchema,
   featuredImageUrl: z.string().url().max(500).nullable().default(null),
   videoId: z.string().uuid().nullable().default(null),
+  video: VideoSchema,
   status: PostStatusSchema.default(PostStatus.DRAFT),
   visibility: PostVisibilitySchema.default(PostVisibility.PUBLIC),
   viewCount: z.number().int().min(0).default(0),

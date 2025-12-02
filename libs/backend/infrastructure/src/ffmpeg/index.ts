@@ -1,4 +1,8 @@
 /**
  * FFmpeg Services - Barrel Export
  */
-export { FFmpegService, createFFmpegService } from './ffmpeg.service.js';
+export {
+  FFmpegService,
+  createFFmpegService,
+  ENCODING_CONFIG,
+} from './ffmpeg.service.js';

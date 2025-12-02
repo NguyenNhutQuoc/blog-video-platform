@@ -16,9 +16,17 @@ import type {
   IStorageService,
   IFFmpegService,
   IVideoRepository,
+  IVideoQualityRepository,
 } from '@blog/backend/core';
-import { StorageBuckets } from '@blog/backend/core';
-import { VIDEO_ENCODING_QUEUE } from '@blog/backend/infrastructure';
+import {
+  StorageBuckets,
+  VideoQualityStatus,
+  CreateVideoQualityInput,
+} from '@blog/backend/core';
+import {
+  VIDEO_ENCODING_QUEUE,
+  ENCODING_CONFIG,
+} from '@blog/backend/infrastructure';
 import { VideoStatus } from '@blog/shared/domain';
 
 export interface WorkerConfig {
@@ -36,6 +44,7 @@ export interface WorkerDependencies {
   storageService: IStorageService;
   ffmpegService: IFFmpegService;
   videoRepository: IVideoRepository;
+  videoQualityRepository: IVideoQualityRepository;
 }
 
 export class VideoEncodingWorker {
@@ -49,7 +58,10 @@ export class VideoEncodingWorker {
 
     console.log('🔧 Initializing BullMQ Worker...');
     console.log('  Queue:', VIDEO_ENCODING_QUEUE);
-    console.log('  Redis config:', { host: config.redis.host, port: config.redis.port });
+    console.log('  Redis config:', {
+      host: config.redis.host,
+      port: config.redis.port,
+    });
     console.log('  Concurrency:', config.concurrency);
 
     // Ensure temp directory exists
@@ -155,14 +167,19 @@ export class VideoEncodingWorker {
       await this.updateVideoStatus(videoId, VideoStatus.PROCESSING);
       await job.updateProgress(5);
 
+      // Check for cancellation flag
+      if (await this.isCancelled(job)) {
+        throw new Error('Job cancelled by user');
+      }
+
       // Step 1: Download video from MinIO (10%)
       console.log(`📥 Step 1/8: Downloading video...`);
       const localVideoPath = path.join(workDir, 'source.mp4');
-      
+
       // Parse bucket and key from rawFilePath (format: "bucket/key")
       const [bucket, ...keyParts] = rawFilePath.split('/');
       const key = keyParts.join('/');
-      
+
       console.log(`  Downloading from bucket: ${bucket}, key: ${key}`);
       await this.downloadFromStorage(bucket, key, localVideoPath);
       await job.updateProgress(10);
@@ -176,6 +193,11 @@ export class VideoEncodingWorker {
         `  Duration: ${metadata.duration}s, Resolution: ${metadata.width}x${metadata.height}`
       );
       await job.updateProgress(20);
+
+      // Check for cancellation
+      if (await this.isCancelled(job)) {
+        throw new Error('Job cancelled by user');
+      }
 
       // Check duration limit (30 minutes max)
       if (metadata.duration > 1800) {
@@ -194,7 +216,33 @@ export class VideoEncodingWorker {
       await job.updateProgress(30);
 
       // Step 4: Encode to HLS (30% - 80%)
-      console.log(`🎞️ Step 4/8: Encoding to HLS...`);
+      console.log(
+        `🎞️ Step 4/8: Encoding to HLS (parallel mode: ${ENCODING_CONFIG.ENABLE_PARALLEL})...`
+      );
+
+      // Initialize video quality records before encoding
+      const qualityNames = ['360p', '480p', '720p', '1080p'];
+      const qualityInputs: CreateVideoQualityInput[] = qualityNames
+        .filter((name) => {
+          // Filter based on source resolution
+          const heightMap = {
+            '360p': 360,
+            '480p': 480,
+            '720p': 720,
+            '1080p': 1080,
+          };
+          return heightMap[name as keyof typeof heightMap] <= metadata.height;
+        })
+        .map((name) => ({
+          videoId,
+          qualityName: name,
+          retryPriority: ENCODING_CONFIG.QUALITY_RETRY_PRIORITY[name] || 4,
+          status: VideoQualityStatus.ENCODING,
+        }));
+
+      await this.deps.videoQualityRepository.createBatch(qualityInputs);
+      console.log(`  Initialized ${qualityInputs.length} quality records`);
+
       const hlsDir = path.join(workDir, 'hls');
       const hlsResult = await this.deps.ffmpegService.encodeToHLS(
         localVideoPath,
@@ -210,7 +258,57 @@ export class VideoEncodingWorker {
         }
       );
       console.log(`  Encoding completed in ${hlsResult.encodingTime}ms`);
+
+      // Handle parallel encoding results
+      const successQualities = hlsResult.variantPlaylists.map((v) => v.quality);
+      const failedQualities = hlsResult.failedQualities || [];
+
+      console.log(`  ✅ Successfully encoded: ${successQualities.join(', ')}`);
+      if (failedQualities.length > 0) {
+        console.log(
+          `  ❌ Failed to encode: ${failedQualities
+            .map((f) => f.quality)
+            .join(', ')}`
+        );
+      }
+
+      // Update video quality statuses
+      for (const variant of hlsResult.variantPlaylists) {
+        await this.deps.videoQualityRepository.update(
+          videoId,
+          variant.quality,
+          {
+            status: VideoQualityStatus.READY,
+            completedAt: new Date(),
+          }
+        );
+      }
+
+      for (const failed of failedQualities) {
+        await this.deps.videoQualityRepository.update(videoId, failed.quality, {
+          status: VideoQualityStatus.FAILED,
+          errorMessage: failed.error.message,
+          completedAt: new Date(),
+        });
+
+        // Archive failed artifacts for debugging
+        const qualityDir = path.join(hlsDir, failed.quality);
+        if (fs.existsSync(qualityDir)) {
+          await this.archiveFailedArtifacts(
+            videoId,
+            failed.quality,
+            qualityDir,
+            failed.error.message
+          );
+        }
+      }
+
       await job.updateProgress(80);
+
+      // Check for cancellation before continuing
+      if (await this.isCancelled(job)) {
+        throw new Error('Job cancelled by user');
+      }
 
       // Step 5: Upload thumbnail (85%)
       console.log(`📤 Step 5/8: Uploading thumbnail...`);
@@ -234,9 +332,33 @@ export class VideoEncodingWorker {
       const thumbnailUrl = `${this.config.minioEndpoint}/${StorageBuckets.THUMBNAILS}/${thumbnailKey}`;
       const qualities = hlsResult.variantPlaylists.map((v) => v.quality);
 
+      // Determine video status based on number of successful qualities
+      const readyCount = successQualities.length;
+      const minQualities = ENCODING_CONFIG.MIN_QUALITIES_FOR_PLAYBACK;
+
+      let videoStatus: (typeof VideoStatus)[keyof typeof VideoStatus];
+      if (readyCount >= minQualities && failedQualities.length === 0) {
+        videoStatus = VideoStatus.READY;
+        console.log(`  ✅ All qualities encoded successfully - Status: READY`);
+      } else if (readyCount >= minQualities) {
+        videoStatus = VideoStatus.PARTIAL_READY;
+        console.log(
+          `  ⚠️ ${readyCount}/${
+            readyCount + failedQualities.length
+          } qualities ready - Status: PARTIAL_READY`
+        );
+        // TODO: Trigger notification for partial ready
+        // TODO: Queue retry jobs for failed qualities
+      } else {
+        videoStatus = VideoStatus.FAILED;
+        console.log(
+          `  ❌ Only ${readyCount} qualities ready (need ${minQualities}) - Status: FAILED`
+        );
+      }
+
       await this.deps.videoRepository.update(videoId, {
-        status: VideoStatus.READY,
-        hlsUrl: hlsMasterUrl,
+        status: videoStatus,
+        hlsUrl: videoStatus !== VideoStatus.FAILED ? hlsMasterUrl : undefined,
         thumbnailUrl: thumbnailUrl,
         duration: Math.floor(metadata.duration),
         width: metadata.width,
@@ -269,6 +391,18 @@ export class VideoEncodingWorker {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       console.error(`❌ Failed to process video ${videoId}:`, errorMessage);
+
+      // Check if this was a cancellation
+      if (errorMessage.includes('cancelled')) {
+        console.log(`🛑 Job cancelled for video ${videoId}`);
+        // Kill any active FFmpeg processes
+        if (
+          this.deps.ffmpegService &&
+          'killAllProcesses' in this.deps.ffmpegService
+        ) {
+          (this.deps.ffmpegService as any).killAllProcesses();
+        }
+      }
 
       // Cleanup on error
       await this.cleanup(workDir);
@@ -365,6 +499,59 @@ export class VideoEncodingWorker {
       }
     } catch (error) {
       console.warn(`⚠️ Failed to cleanup ${workDir}:`, error);
+    }
+  }
+
+  /**
+   * Check if job has been cancelled
+   */
+  private async isCancelled(job: Job<EncodingJobData>): Promise<boolean> {
+    const video = await this.deps.videoRepository.findById(job.data.videoId);
+    return video?.status === VideoStatus.CANCELLED;
+  }
+
+  /**
+   * Archive failed encoding artifacts to MinIO for debugging
+   */
+  private async archiveFailedArtifacts(
+    videoId: string,
+    qualityName: string,
+    artifactPath: string,
+    _errorMessage: string
+  ): Promise<void> {
+    try {
+      if (!fs.existsSync(artifactPath)) {
+        return;
+      }
+
+      const timestamp = Date.now();
+      const debugPath = `${videoId}/${qualityName}/${timestamp}/`;
+
+      // Upload partial files to videos-failed-debug bucket
+      const files = fs.readdirSync(artifactPath);
+      for (const file of files) {
+        const filePath = path.join(artifactPath, file);
+        const stat = fs.statSync(filePath);
+
+        if (stat.isFile()) {
+          const fileBuffer = fs.readFileSync(filePath);
+          await this.deps.storageService.uploadFile({
+            bucket: 'videos-failed-debug',
+            key: `${debugPath}${file}`,
+            data: fileBuffer,
+            contentType: 'application/octet-stream',
+          });
+        }
+      }
+
+      console.log(
+        `🗃️ Archived failed artifacts for ${videoId}/${qualityName} to ${debugPath}`
+      );
+
+      // TODO: Insert record into failed_encoding_artifacts table
+      // This would require adding a repository for that table
+    } catch (error) {
+      console.warn(`Failed to archive artifacts:`, error);
     }
   }
 

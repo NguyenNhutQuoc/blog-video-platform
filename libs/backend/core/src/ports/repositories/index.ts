@@ -38,6 +38,7 @@ export type {
   VideoQueryOptions,
   VideoUpdateData,
 } from './video.repository.interface.js';
+export type { IVideoQualityRepository } from './video-quality.repository.interface.js';
 export type { ISessionRepository } from './session.repository.interface.js';
 export type {
   IFollowRepository,

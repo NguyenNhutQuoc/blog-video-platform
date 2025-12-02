@@ -56,6 +56,11 @@ export interface HLSEncodingResult {
   }[];
   /** Total encoding time in milliseconds */
   encodingTime: number;
+  /** Failed qualities (only present when parallel encoding is enabled) */
+  failedQualities?: {
+    quality: string;
+    error: Error;
+  }[];
 }
 
 /**

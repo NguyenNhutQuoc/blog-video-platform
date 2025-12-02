@@ -10,7 +10,9 @@ import {
   createMinIOService,
   createFFmpegService,
   getDatabase,
+  getPool,
   PostgresVideoRepository,
+  createVideoQualityRepository,
 } from '@blog/backend/infrastructure';
 import * as fs from 'fs';
 
@@ -65,8 +67,13 @@ async function main() {
     const ffmpegVersion = await ffmpegService.getVersion();
     console.log(`  FFmpeg version: ${ffmpegVersion}`);
 
-    // Initialize video repository
+    // Initialize repositories
     const videoRepository = new PostgresVideoRepository(db);
+    const pool = getPool();
+    if (!pool) {
+      throw new Error('Database pool not initialized');
+    }
+    const videoQualityRepository = createVideoQualityRepository(pool);
 
     // Create worker with dependencies
     const worker = createVideoEncodingWorker(
@@ -84,6 +91,7 @@ async function main() {
         storageService,
         ffmpegService,
         videoRepository,
+        videoQualityRepository,
       }
     );
 

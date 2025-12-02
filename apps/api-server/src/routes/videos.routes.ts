@@ -291,5 +291,221 @@ export function createVideosRoutes(deps: VideoRoutesDependencies): Router {
     })
   );
 
+  /**
+   * @openapi
+   * /api/videos/{videoId}/encoding/status:
+   *   get:
+   *     summary: Get detailed encoding status
+   *     description: Returns encoding progress with per-quality status
+   *     tags: [Videos]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: videoId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     responses:
+   *       200:
+   *         description: Detailed encoding status
+   *       401:
+   *         description: Authentication required
+   *       404:
+   *         description: Video not found
+   */
+  router.get(
+    '/:videoId/encoding/status',
+    deps.authMiddleware,
+    asyncHandler(async (req: Request, res: Response) => {
+      if (!req.user) {
+        throw createError('Authentication required', 401, 'UNAUTHORIZED');
+      }
+
+      const video = await deps.videoRepository.findById(req.params.videoId);
+      if (!video) {
+        throw createError('Video not found', 404, 'NOT_FOUND');
+      }
+
+      // Get job status from queue
+      const jobStatus = await deps.videoQueueService.getJobByVideoId(
+        req.params.videoId
+      );
+
+      // Get per-quality status
+      const qualities = await deps.videoQualityRepository.findByVideoId(
+        req.params.videoId
+      );
+
+      res.json({
+        success: true,
+        data: {
+          videoId: video.id,
+          overallStatus: video.status,
+          overallProgress: jobStatus?.progress || 0,
+          qualities: qualities.map((q) => ({
+            name: q.qualityName,
+            status: q.status,
+            retryCount: q.retryCount,
+            errorMessage: q.errorMessage,
+            completedAt: q.completedAt,
+          })),
+          isPartialReady: video.status === 'partial_ready',
+        },
+      });
+    })
+  );
+
+  /**
+   * @openapi
+   * /api/videos/{videoId}/encoding/cancel:
+   *   post:
+   *     summary: Cancel video encoding
+   *     description: Cancels ongoing encoding job and cleans up resources
+   *     tags: [Videos]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: videoId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     responses:
+   *       200:
+   *         description: Encoding cancelled
+   *       401:
+   *         description: Authentication required
+   *       404:
+   *         description: Video not found
+   */
+  router.post(
+    '/:videoId/encoding/cancel',
+    deps.authMiddleware,
+    asyncHandler(async (req: Request, res: Response) => {
+      if (!req.user) {
+        throw createError('Authentication required', 401, 'UNAUTHORIZED');
+      }
+
+      const video = await deps.videoRepository.findById(req.params.videoId);
+      if (!video) {
+        throw createError('Video not found', 404, 'NOT_FOUND');
+      }
+
+      // Only allow canceling processing videos
+      if (video.status !== 'processing' && video.status !== 'partial_ready') {
+        throw createError(
+          'Can only cancel processing videos',
+          400,
+          'INVALID_STATUS'
+        );
+      }
+
+      // Cancel the job in queue
+      const jobId = `video-${req.params.videoId}`;
+      const cancelled = await deps.videoQueueService.cancelJob(jobId);
+
+      // Update video status
+      await deps.videoRepository.update(req.params.videoId, {
+        status: 'cancelled' as any,
+      });
+
+      // Update quality statuses
+      const qualities = await deps.videoQualityRepository.findByVideoId(
+        req.params.videoId
+      );
+      for (const quality of qualities) {
+        if (quality.status === 'encoding' || quality.status === 'pending') {
+          await deps.videoQualityRepository.update(
+            req.params.videoId,
+            quality.qualityName,
+            { status: 'cancelled' as any }
+          );
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          message: cancelled
+            ? 'Encoding cancelled successfully'
+            : 'Job already completed or not found in queue',
+          videoId: req.params.videoId,
+          status: 'cancelled',
+        },
+      });
+    })
+  );
+
+  /**
+   * @openapi
+   * /api/videos/{videoId}/encoding/pause:
+   *   post:
+   *     summary: Pause video encoding
+   *     description: Pauses ongoing encoding (implementation pending)
+   *     tags: [Videos]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: videoId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     responses:
+   *       501:
+   *         description: Not implemented yet
+   */
+  router.post(
+    '/:videoId/encoding/pause',
+    deps.authMiddleware,
+    asyncHandler(async (_req: Request, _res: Response) => {
+      // TODO: Implement pause functionality
+      // This would require adding pause/resume state to job data
+      // and checking it periodically in the worker
+      throw createError(
+        'Pause functionality not yet implemented',
+        501,
+        'NOT_IMPLEMENTED'
+      );
+    })
+  );
+
+  /**
+   * @openapi
+   * /api/videos/{videoId}/encoding/resume:
+   *   post:
+   *     summary: Resume video encoding
+   *     description: Resumes paused encoding (implementation pending)
+   *     tags: [Videos]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: videoId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     responses:
+   *       501:
+   *         description: Not implemented yet
+   */
+  router.post(
+    '/:videoId/encoding/resume',
+    deps.authMiddleware,
+    asyncHandler(async (_req: Request, _res: Response) => {
+      // TODO: Implement resume functionality
+      throw createError(
+        'Resume functionality not yet implemented',
+        501,
+        'NOT_IMPLEMENTED'
+      );
+    })
+  );
+
   return router;
 }

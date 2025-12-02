@@ -26,9 +26,19 @@ export class PostgresPostRepository implements IPostRepository {
   async findById(id: string): Promise<PostEntity | null> {
     const row = await this.db
       .selectFrom('posts')
-      .selectAll()
-      .where('id', '=', id)
-      .where('deleted_at', 'is', null)
+      .leftJoin('videos', 'posts.video_id', 'videos.id')
+      .selectAll('posts')
+      .select([
+        'videos.id as joined_video_id',
+        'videos.status as video_status',
+        'videos.hls_master_url as video_hls_url',
+        'videos.thumbnail_url as video_thumbnail_url',
+        'videos.duration as video_duration',
+        'videos.width as video_width',
+        'videos.height as video_height',
+      ])
+      .where('posts.id', '=', id)
+      .where('posts.deleted_at', 'is', null)
       .executeTakeFirst();
 
     return row ? toDomainPost(row) : null;
@@ -37,9 +47,19 @@ export class PostgresPostRepository implements IPostRepository {
   async findBySlug(slug: string): Promise<PostEntity | null> {
     const row = await this.db
       .selectFrom('posts')
-      .selectAll()
-      .where('slug', '=', slug)
-      .where('deleted_at', 'is', null)
+      .leftJoin('videos', 'posts.video_id', 'videos.id')
+      .selectAll('posts')
+      .select([
+        'videos.id as joined_video_id',
+        'videos.status as video_status',
+        'videos.hls_master_url as video_hls_url',
+        'videos.thumbnail_url as video_thumbnail_url',
+        'videos.duration as video_duration',
+        'videos.width as video_width',
+        'videos.height as video_height',
+      ])
+      .where('posts.slug', '=', slug)
+      .where('posts.deleted_at', 'is', null)
       .executeTakeFirst();
 
     return row ? toDomainPost(row) : null;
@@ -51,8 +71,18 @@ export class PostgresPostRepository implements IPostRepository {
   ): Promise<PostEntity[]> {
     let query = this.db
       .selectFrom('posts')
-      .selectAll()
-      .where('author_id', '=', authorId);
+      .leftJoin('videos', 'posts.video_id', 'videos.id')
+      .selectAll('posts')
+      .select([
+        'videos.id as joined_video_id',
+        'videos.status as video_status',
+        'videos.hls_master_url as video_hls_url',
+        'videos.thumbnail_url as video_thumbnail_url',
+        'videos.duration as video_duration',
+        'videos.width as video_width',
+        'videos.height as video_height',
+      ])
+      .where('posts.author_id', '=', authorId);
 
     if (!options?.includeDeleted) {
       query = query.where('deleted_at', 'is', null);
@@ -99,10 +129,20 @@ export class PostgresPostRepository implements IPostRepository {
   async findPublished(options?: PostFeedOptions): Promise<PostEntity[]> {
     let query = this.db
       .selectFrom('posts')
-      .selectAll()
-      .where('status', '=', 'published')
-      .where('visibility', '=', 'public')
-      .where('deleted_at', 'is', null);
+      .leftJoin('videos', 'posts.video_id', 'videos.id')
+      .selectAll('posts')
+      .select([
+        'videos.id as joined_video_id',
+        'videos.status as video_status',
+        'videos.hls_master_url as video_hls_url',
+        'videos.thumbnail_url as video_thumbnail_url',
+        'videos.duration as video_duration',
+        'videos.width as video_width',
+        'videos.height as video_height',
+      ])
+      .where('posts.status', '=', 'published')
+      .where('posts.visibility', '=', 'public')
+      .where('posts.deleted_at', 'is', null);
 
     const orderBy = options?.orderBy ?? 'publishedAt';
     const orderDir = options?.orderDir ?? 'desc';
@@ -221,7 +261,17 @@ export class PostgresPostRepository implements IPostRepository {
     let query = this.db
       .selectFrom('posts')
       .innerJoin('post_categories', 'posts.id', 'post_categories.post_id')
+      .leftJoin('videos', 'posts.video_id', 'videos.id')
       .selectAll('posts')
+      .select([
+        'videos.id as joined_video_id',
+        'videos.status as video_status',
+        'videos.hls_master_url as video_hls_url',
+        'videos.thumbnail_url as video_thumbnail_url',
+        'videos.duration as video_duration',
+        'videos.width as video_width',
+        'videos.height as video_height',
+      ])
       .where('post_categories.category_id', '=', categoryId)
       .where('posts.status', '=', 'published')
       .where('posts.visibility', '=', 'public')
@@ -245,7 +295,17 @@ export class PostgresPostRepository implements IPostRepository {
     let query = this.db
       .selectFrom('posts')
       .innerJoin('post_tags', 'posts.id', 'post_tags.post_id')
+      .leftJoin('videos', 'posts.video_id', 'videos.id')
       .selectAll('posts')
+      .select([
+        'videos.id as joined_video_id',
+        'videos.status as video_status',
+        'videos.hls_master_url as video_hls_url',
+        'videos.thumbnail_url as video_thumbnail_url',
+        'videos.duration as video_duration',
+        'videos.width as video_width',
+        'videos.height as video_height',
+      ])
       .where('post_tags.tag_id', '=', tagId)
       .where('posts.status', '=', 'published')
       .where('posts.visibility', '=', 'public')
@@ -270,13 +330,23 @@ export class PostgresPostRepository implements IPostRepository {
     // Simple related posts: same author, excluding current post
     const rows = await this.db
       .selectFrom('posts')
-      .selectAll()
-      .where('author_id', '=', post.authorId)
-      .where('id', '!=', postId)
-      .where('status', '=', 'published')
-      .where('visibility', '=', 'public')
-      .where('deleted_at', 'is', null)
-      .orderBy('published_at', 'desc')
+      .leftJoin('videos', 'posts.video_id', 'videos.id')
+      .selectAll('posts')
+      .select([
+        'videos.id as joined_video_id',
+        'videos.status as video_status',
+        'videos.hls_master_url as video_hls_url',
+        'videos.thumbnail_url as video_thumbnail_url',
+        'videos.duration as video_duration',
+        'videos.width as video_width',
+        'videos.height as video_height',
+      ])
+      .where('posts.author_id', '=', post.authorId)
+      .where('posts.id', '!=', postId)
+      .where('posts.status', '=', 'published')
+      .where('posts.visibility', '=', 'public')
+      .where('posts.deleted_at', 'is', null)
+      .orderBy('posts.published_at', 'desc')
       .limit(limit)
       .execute();
 
@@ -308,10 +378,20 @@ export class PostgresPostRepository implements IPostRepository {
   async findTrending(options?: TrendingOptions): Promise<PostEntity[]> {
     let query = this.db
       .selectFrom('posts')
-      .selectAll()
-      .where('status', '=', 'published')
-      .where('visibility', '=', 'public')
-      .where('deleted_at', 'is', null);
+      .leftJoin('videos', 'posts.video_id', 'videos.id')
+      .selectAll('posts')
+      .select([
+        'videos.id as joined_video_id',
+        'videos.status as video_status',
+        'videos.hls_master_url as video_hls_url',
+        'videos.thumbnail_url as video_thumbnail_url',
+        'videos.duration as video_duration',
+        'videos.width as video_width',
+        'videos.height as video_height',
+      ])
+      .where('posts.status', '=', 'published')
+      .where('posts.visibility', '=', 'public')
+      .where('posts.deleted_at', 'is', null);
 
     // Filter by period
     if (options?.period && options.period !== 'all') {

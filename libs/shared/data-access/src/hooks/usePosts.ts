@@ -68,11 +68,12 @@ export const usePost = (idOrSlug: string) => {
   return useQuery({
     queryKey: postKeys.detail(idOrSlug),
     queryFn: async (): Promise<Post> => {
-      // Backend returns { post, author, categories?, tags? }
+      // Backend returns { post, author, categories?, tags?, video? }
       const response = await apiClient.get<PostDetailResponse>(
         `/posts/${idOrSlug}`
       );
       const data = response.data;
+      console.log('Fetched post detail:', data);
 
       // Flatten the response into a single Post object
       return {
@@ -80,6 +81,7 @@ export const usePost = (idOrSlug: string) => {
         author: data.author,
         categories: data.categories ?? [],
         tags: data.tags ?? [],
+        video: data.video ?? null,
       };
     },
     enabled: !!idOrSlug,

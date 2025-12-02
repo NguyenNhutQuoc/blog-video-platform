@@ -98,6 +98,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isMuted, setIsMuted] = useState(muted);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [currentQuality, setCurrentQuality] = useState<string>('auto');
   const [availableQualities, setAvailableQualities] = useState<VideoQuality[]>(
     []
@@ -153,20 +155,41 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       // Get available qualities from HLS manifest
       const tech = player.tech({ IWillNotUseThisInPlugins: true }) as any;
-      if (tech && tech.vhs) {
-        const representations = tech.vhs.representations();
-        if (representations && representations.length > 0) {
-          const qualityList: VideoQuality[] = representations.map(
-            (rep: any) => ({
-              label: `${rep.height}p`,
-              src: rep.id,
-              height: rep.height,
-            })
-          );
-          qualityList.sort((a, b) => b.height - a.height);
-          qualityList.unshift({ label: 'Auto', src: 'auto', height: 0 });
-          setAvailableQualities(qualityList);
-        }
+      if (tech && tech.vhs && tech.vhs.playlists) {
+        // Wait for playlists to load
+        player.on('loadedmetadata', () => {
+          try {
+            const playlists = tech.vhs.playlists;
+            if (
+              playlists &&
+              playlists.media_ &&
+              Array.isArray(playlists.media_)
+            ) {
+              const qualityList: VideoQuality[] = playlists.media_
+                .filter(
+                  (playlist: any) =>
+                    playlist &&
+                    playlist.attributes &&
+                    playlist.attributes.RESOLUTION
+                )
+                .map((playlist: any) => ({
+                  label: `${playlist.attributes.RESOLUTION.height}p`,
+                  src: playlist.id,
+                  height: playlist.attributes.RESOLUTION.height,
+                }))
+                .sort(
+                  (a: VideoQuality, b: VideoQuality) => b.height - a.height
+                );
+
+              if (qualityList.length > 0) {
+                qualityList.unshift({ label: 'Auto', src: 'auto', height: 0 });
+                setAvailableQualities(qualityList);
+              }
+            }
+          } catch (err) {
+            console.warn('Failed to get video qualities:', err);
+          }
+        });
       }
     });
 
@@ -214,6 +237,18 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     player.on('error', () => {
       const error = player.error();
       if (error) {
+        setHasError(true);
+        setIsLoading(false);
+
+        // Check if it's a network error (file not found)
+        if (error.code === 2) {
+          setErrorMessage(
+            'Video is still being processed. Please try again later.'
+          );
+        } else {
+          setErrorMessage(error.message || 'Video playback error');
+        }
+
         onError?.(new Error(error.message || 'Video playback error'));
       }
     });
@@ -311,16 +346,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       // Change quality using VHS API
       const tech = player.tech({ IWillNotUseThisInPlugins: true }) as any;
-      if (tech && tech.vhs) {
-        const representations = tech.vhs.representations();
-        if (quality.label === 'Auto') {
-          // Enable all qualities for ABR
-          representations.forEach((rep: any) => rep.enabled(true));
-        } else {
-          // Disable all except selected quality
-          representations.forEach((rep: any) => {
-            rep.enabled(rep.height === quality.height);
-          });
+      if (tech && tech.vhs && tech.vhs.playlists) {
+        try {
+          if (quality.label === 'Auto') {
+            // Re-enable auto quality selection
+            if (tech.vhs.playlists.media_) {
+              tech.vhs.playlists.media_.forEach((playlist: any) => {
+                if (playlist) playlist.excludeUntil = 0;
+              });
+            }
+          } else {
+            // Find and select specific quality
+            const targetPlaylist = tech.vhs.playlists.media_?.find(
+              (p: any) => p?.attributes?.RESOLUTION?.height === quality.height
+            );
+            if (targetPlaylist) {
+              tech.vhs.selectPlaylist = () => targetPlaylist;
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to change quality:', err);
         }
       }
 
@@ -374,7 +419,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       <Box ref={videoRef} sx={{ width: '100%', height: '100%' }} />
 
       {/* Loading Overlay */}
-      {isLoading && (
+      {isLoading && !hasError && (
         <Box
           sx={{
             position: 'absolute',
@@ -390,6 +435,33 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           }}
         >
           <CircularProgress color="primary" />
+        </Box>
+      )}
+
+      {/* Error Overlay */}
+      {hasError && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'rgba(0, 0, 0, 0.8)',
+            zIndex: 10,
+            p: 3,
+          }}
+        >
+          <Typography variant="h6" color="error" gutterBottom>
+            ⚠️ Video Error
+          </Typography>
+          <Typography variant="body1" color="white" textAlign="center">
+            {errorMessage}
+          </Typography>
         </Box>
       )}
 

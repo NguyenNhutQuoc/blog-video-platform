@@ -44,6 +44,16 @@ export interface GetPostOutput {
     fullName: string | null;
     avatarUrl: string | null;
   };
+
+  video?: {
+    id: string;
+    status: string;
+    hlsUrl: string | null;
+    thumbnailUrl: string | null;
+    duration: number | null;
+    width: number | null;
+    height: number | null;
+  } | null;
 }
 
 export interface GetPostDependencies {
@@ -132,6 +142,7 @@ export class GetPostUseCase {
         fullName: authorData.fullName,
         avatarUrl: authorData.avatarUrl,
       },
+      video: postData.video ?? null,
     });
   }
 

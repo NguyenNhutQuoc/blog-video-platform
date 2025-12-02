@@ -97,6 +97,7 @@ export interface PostAuthor {
 export interface PostDetailResponse {
   post: PostData;
   author: PostAuthor;
+  video?: PostVideo | null;
   categories?: Array<{ id: string; name: string; slug: string }>;
   tags?: Array<{ id: string; name: string; slug: string }>;
 }
@@ -111,15 +112,7 @@ export interface Post {
   excerpt?: string | null;
   featuredImageUrl?: string | null;
   videoId?: string | null;
-  video?: {
-    id: string;
-    status: string;
-    hlsUrl?: string | null;
-    thumbnailUrl?: string | null;
-    duration?: number | null;
-    width?: number | null;
-    height?: number | null;
-  } | null;
+  video?: PostVideo | null;
   status: 'draft' | 'published' | 'archived';
   visibility: 'public' | 'private' | 'unlisted';
   author: PostAuthor;
@@ -132,6 +125,16 @@ export interface Post {
   publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PostVideo {
+  id: string;
+  status: string;
+  hlsUrl?: string | null;
+  thumbnailUrl?: string | null;
+  duration?: number | null;
+  width?: number | null;
+  height?: number | null;
 }
 
 export interface CreatePostRequest {
@@ -219,6 +222,8 @@ export interface PostSummary {
   slug: string;
   excerpt: string | null;
   featuredImageUrl: string | null;
+  videoId: string | null;
+  video?: PostVideo | null;
   status: 'draft' | 'published' | 'archived';
   visibility: 'public' | 'private' | 'unlisted';
   viewCount: number;

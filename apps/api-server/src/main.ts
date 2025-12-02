@@ -112,6 +112,7 @@ async function main() {
       tagRepository: container.tagRepository,
       followRepository: container.followRepository,
       videoRepository: container.videoRepository,
+      videoQualityRepository: container.videoQualityRepository,
       passwordHasher: container.passwordHasher,
       tokenGenerator: container.tokenGenerator,
       emailVerificationTokenRepository:

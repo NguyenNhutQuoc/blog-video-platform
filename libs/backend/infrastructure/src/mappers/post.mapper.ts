@@ -17,6 +17,14 @@ interface CamelCasePostRow {
   excerpt: string | null;
   featuredImageUrl: string | null;
   videoId: string | null;
+  // Video fields from LEFT JOIN
+  joinedVideoId?: string | null;
+  videoStatus?: string | null;
+  videoHlsUrl?: string | null;
+  videoThumbnailUrl?: string | null;
+  videoDuration?: number | null;
+  videoWidth?: number | null;
+  videoHeight?: number | null;
   status: string;
   visibility: string;
   viewCount: number;
@@ -37,6 +45,19 @@ export function toDomainPost(row: PostRow): PostEntity {
   // Cast to camelCase type since CamelCasePlugin transforms the row
   const camelRow = row as unknown as CamelCasePostRow;
 
+  // Build video object if video data exists
+  const video = camelRow.joinedVideoId
+    ? {
+        id: camelRow.joinedVideoId,
+        status: camelRow.videoStatus ?? 'unknown',
+        hlsUrl: camelRow.videoHlsUrl ?? null,
+        thumbnailUrl: camelRow.videoThumbnailUrl ?? null,
+        duration: camelRow.videoDuration ?? null,
+        width: camelRow.videoWidth ?? null,
+        height: camelRow.videoHeight ?? null,
+      }
+    : null;
+
   const post: Post = {
     id: camelRow.id,
     authorId: camelRow.authorId,
@@ -46,6 +67,7 @@ export function toDomainPost(row: PostRow): PostEntity {
     excerpt: camelRow.excerpt ?? null,
     featuredImageUrl: camelRow.featuredImageUrl ?? null,
     videoId: camelRow.videoId ?? null,
+    video,
     status: camelRow.status as 'draft' | 'published' | 'archived',
     visibility: camelRow.visibility as 'public' | 'private' | 'unlisted',
     viewCount: camelRow.viewCount,
@@ -76,6 +98,7 @@ export function toNewPostRow(entity: PostEntity): NewPost {
     excerpt: data.excerpt,
     featured_image_url: data.featuredImageUrl,
     video_id: data.videoId,
+    // Note: video object is not stored in posts table, it's joined from videos table
     status: data.status,
     visibility: data.visibility,
     view_count: data.viewCount,

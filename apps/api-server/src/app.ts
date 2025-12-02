@@ -37,6 +37,7 @@ import type {
   ITagRepository,
   IFollowRepository,
   IVideoRepository,
+  IVideoQualityRepository,
   ITokenGenerator,
   IPasswordHasher,
   IEmailVerificationTokenRepository,
@@ -55,6 +56,7 @@ export interface AppDependencies {
   tagRepository: ITagRepository;
   followRepository: IFollowRepository;
   videoRepository: IVideoRepository;
+  videoQualityRepository?: IVideoQualityRepository;
   tokenGenerator: ITokenGenerator;
   passwordHasher: IPasswordHasher;
   // Optional dependencies
@@ -234,9 +236,13 @@ export function createApp(deps: AppDependencies): Express {
 
   // Video routes (only if storage service is configured)
   const videosRoutes =
-    deps.storageService && deps.queueVideoForProcessing
+    deps.storageService &&
+    deps.queueVideoForProcessing &&
+    deps.videoQueueService &&
+    deps.videoQualityRepository
       ? createVideosRoutes({
           videoRepository: deps.videoRepository,
+          videoQualityRepository: deps.videoQualityRepository,
           userRepository: deps.userRepository,
           storageService: deps.storageService,
           videoQueueService: deps.videoQueueService,
@@ -244,6 +250,24 @@ export function createApp(deps: AppDependencies): Express {
           queueVideoForProcessing: deps.queueVideoForProcessing,
         })
       : null;
+
+  // Log các thông tin khởi động liên quan đến video routes
+  console.log('🎬 Setting up video routes...');
+  console.log(`  Storage Service Configured: ${!!deps.storageService}`);
+  console.log(
+    `  Queue Video For Processing Function Provided: ${!!deps.queueVideoForProcessing}`
+  );
+  console.log(`  Video Queue Service Configured: ${!!deps.videoQueueService}`);
+  console.log(
+    `  Video Quality Repository Configured: ${!!deps.videoQualityRepository}`
+  );
+
+  // Log the availability of video routes
+  if (videosRoutes) {
+    console.log('🎬 Video routes enabled');
+  } else {
+    console.log('🎬 Video routes disabled (storage service not configured)');
+  }
 
   app.use('/api/auth', authRoutes);
   app.use('/api/posts', postsRoutes);

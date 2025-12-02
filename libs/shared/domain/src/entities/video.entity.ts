@@ -12,6 +12,7 @@ export const VideoStatus = {
   UPLOADING: 'uploading',
   PROCESSING: 'processing',
   READY: 'ready',
+  PARTIAL_READY: 'partial_ready',
   FAILED: 'failed',
   CANCELLED: 'cancelled',
 } as const;
@@ -34,6 +35,7 @@ const VideoStatusSchema = z.enum([
   VideoStatus.UPLOADING,
   VideoStatus.PROCESSING,
   VideoStatus.READY,
+  VideoStatus.PARTIAL_READY,
   VideoStatus.FAILED,
   VideoStatus.CANCELLED,
 ]);

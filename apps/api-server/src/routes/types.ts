@@ -8,6 +8,7 @@ import type {
   ISessionRepository,
   IPostRepository,
   IVideoRepository,
+  IVideoQualityRepository,
   ICategoryRepository,
   ITagRepository,
   IFollowRepository,
@@ -61,9 +62,10 @@ export interface FollowRoutesDependencies {
 
 export interface VideoRoutesDependencies {
   videoRepository: IVideoRepository;
+  videoQualityRepository: IVideoQualityRepository;
   userRepository: IUserRepository;
   storageService: IStorageService;
-  videoQueueService?: IVideoQueueService; // For real-time progress tracking
+  videoQueueService: IVideoQueueService;
   authMiddleware: RequestHandler;
   /**
    * Function to queue video for encoding

@@ -15,6 +15,7 @@ import type {
   ITagRepository,
   IFollowRepository,
   IVideoRepository,
+  IVideoQualityRepository,
   IEmailVerificationTokenRepository,
   IPasswordResetTokenRepository,
   ILoginAttemptRepository,
@@ -32,6 +33,7 @@ import {
   PostgresTagRepository,
   PostgresFollowRepository,
   PostgresVideoRepository,
+  VideoQualityRepository,
   EmailVerificationTokenRepository,
   PasswordResetTokenRepository,
   LoginAttemptRepository,
@@ -52,6 +54,7 @@ export interface AppContainer {
   tagRepository: ITagRepository;
   followRepository: IFollowRepository;
   videoRepository: IVideoRepository;
+  videoQualityRepository: IVideoQualityRepository;
   emailVerificationTokenRepository: IEmailVerificationTokenRepository;
   passwordResetTokenRepository: IPasswordResetTokenRepository;
   loginAttemptRepository: ILoginAttemptRepository;
@@ -103,6 +106,7 @@ export function createContainer(deps: ContainerDependencies): AppContainer {
   const tagRepository = new PostgresTagRepository(deps.db);
   const followRepository = new PostgresFollowRepository(deps.db);
   const videoRepository = new PostgresVideoRepository(deps.db);
+  const videoQualityRepository = new VideoQualityRepository(deps.pool);
   const emailVerificationTokenRepository = new EmailVerificationTokenRepository(
     deps.pool
   );
@@ -120,6 +124,7 @@ export function createContainer(deps: ContainerDependencies): AppContainer {
     tagRepository,
     followRepository,
     videoRepository,
+    videoQualityRepository,
     emailVerificationTokenRepository,
     passwordResetTokenRepository,
     loginAttemptRepository,
