@@ -86,10 +86,11 @@ services:
       /bin/sh -c "
       sleep 10;
       /usr/bin/mc alias set myminio http://minio:9000 minio_admin minio_password_change_in_production;
-      /usr/bin/mc mb myminio/videos --ignore-existing;
+      /usr/bin/mc mb myminio/videos-raw --ignore-existing;
+      /usr/bin/mc mb myminio/videos-encoded --ignore-existing;
       /usr/bin/mc mb myminio/images --ignore-existing;
       /usr/bin/mc mb myminio/thumbnails --ignore-existing;
-      /usr/bin/mc anonymous set download myminio/videos;
+      /usr/bin/mc anonymous set download myminio/videos-encoded;
       /usr/bin/mc anonymous set download myminio/images;
       /usr/bin/mc anonymous set download myminio/thumbnails;
       echo 'MinIO buckets created successfully';
