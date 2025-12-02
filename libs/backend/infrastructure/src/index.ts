@@ -18,6 +18,9 @@ export * from './queue/index.js';
 // FFmpeg
 export * from './ffmpeg/index.js';
 
+// Notifications
+export * from './notifications/index.js';
+
 // Mappers
 export * from './mappers/index.js';
 

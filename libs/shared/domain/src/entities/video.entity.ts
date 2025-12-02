@@ -10,6 +10,7 @@ import { z } from 'zod';
 
 export const VideoStatus = {
   UPLOADING: 'uploading',
+  UPLOADED: 'uploaded', // Upload complete, queued for processing
   PROCESSING: 'processing',
   READY: 'ready',
   PARTIAL_READY: 'partial_ready',
@@ -33,6 +34,7 @@ export const VideoQuality = {
  */
 const VideoStatusSchema = z.enum([
   VideoStatus.UPLOADING,
+  VideoStatus.UPLOADED,
   VideoStatus.PROCESSING,
   VideoStatus.READY,
   VideoStatus.PARTIAL_READY,
@@ -223,6 +225,14 @@ export class VideoEntity {
    */
   canRetry(): boolean {
     return this.props.retryCount < 3;
+  }
+
+  /**
+   * Mark as uploaded (queued for processing but not started yet)
+   */
+  markAsUploaded(): void {
+    console.log('Marking video as uploaded');
+    this.props.status = VideoStatus.UPLOADED;
   }
 
   /**

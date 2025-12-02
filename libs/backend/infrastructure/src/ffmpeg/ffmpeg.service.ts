@@ -43,6 +43,7 @@ export const ENCODING_CONFIG = {
 
 export class FFmpegService implements IFFmpegService {
   private activeCommands: Map<string, any> = new Map(); // Store active FFmpeg commands
+  private nvencAvailable: boolean | null = null; // Cache NVENC availability check
 
   constructor(ffmpegPath?: string, ffprobePath?: string) {
     if (ffmpegPath) {
@@ -51,6 +52,35 @@ export class FFmpegService implements IFFmpegService {
     if (ffprobePath) {
       ffmpeg.setFfprobePath(ffprobePath);
     }
+  }
+
+  /**
+   * Check if NVENC hardware encoder is available
+   */
+  private async checkNvencAvailability(): Promise<boolean> {
+    if (this.nvencAvailable !== null) {
+      return this.nvencAvailable;
+    }
+
+    return new Promise((resolve) => {
+      import('child_process')
+        .then(({ exec }) => {
+          exec('ffmpeg -encoders 2>&1 | grep h264_nvenc', (error, stdout) => {
+            this.nvencAvailable = !error && stdout.includes('h264_nvenc');
+            console.log(
+              this.nvencAvailable
+                ? '🚀 NVENC GPU encoding available'
+                : '⚠️ NVENC not available, falling back to CPU encoding'
+            );
+            resolve(this.nvencAvailable);
+          });
+        })
+        .catch(() => {
+          this.nvencAvailable = false;
+          console.warn('⚠️ Failed to check NVENC availability, using CPU encoding');
+          resolve(false);
+        });
+    });
   }
 
   /**
@@ -316,23 +346,64 @@ export class FFmpegService implements IFFmpegService {
     return parseFloat(fpsString) || 0;
   }
 
-  private encodeQuality(
+  private async encodeQuality(
     inputPath: string,
     outputDir: string,
     quality: HLSQuality,
     onProgress: (percent: number, frames: number, timemark: string) => void
   ): Promise<void> {
+    // Check if NVENC is available
+    const useNvenc = await this.checkNvencAvailability();
+
     return new Promise((resolve, reject) => {
       const playlistPath = path.join(outputDir, 'playlist.m3u8');
       const segmentPattern = path.join(outputDir, 'segment_%03d.ts');
       const commandKey = `${quality.name}-${Date.now()}`;
 
-      const command = ffmpeg(inputPath)
-        // Video settings
-        .videoCodec('libx264')
-        .size(`${quality.width}x${quality.height}`)
-        .videoBitrate(`${quality.videoBitrate}k`)
-        .addOptions(['-preset fast', '-profile:v main', '-level 3.1'])
+      let command = ffmpeg(inputPath);
+
+      if (useNvenc) {
+        // GPU ENCODING - NVIDIA NVENC
+        console.log(`  🚀 Encoding ${quality.name} with GPU (h264_nvenc)`);
+        command
+          .videoCodec('h264_nvenc')
+          .size(`${quality.width}x${quality.height}`)
+          .videoBitrate(`${quality.videoBitrate}k`)
+          .addOptions([
+            // NVENC preset: p1=fastest, p4=medium (balanced), p7=slowest/best
+            '-preset p4',
+            '-profile:v main',
+            '-level 3.1',
+            // Rate control: vbr = variable bitrate for better quality
+            '-rc vbr',
+            // Lookahead frames for better quality
+            '-rc-lookahead 32',
+            // Adaptive Quantization
+            '-spatial_aq 1',
+            '-temporal_aq 1',
+            // B-frame reference mode
+            '-b_ref_mode middle',
+            // Use first GPU
+            '-gpu 0',
+            // Multi-pass encoding
+            '-multipass fullres',
+          ]);
+      } else {
+        // CPU ENCODING - libx264 (fallback)
+        console.log(`  💻 Encoding ${quality.name} with CPU (libx264)`);
+        command
+          .videoCodec('libx264')
+          .size(`${quality.width}x${quality.height}`)
+          .videoBitrate(`${quality.videoBitrate}k`)
+          .addOptions([
+            '-preset fast', // fast preset for reasonable speed
+            '-profile:v main',
+            '-level 3.1',
+          ]);
+      }
+
+      // Common settings for both GPU and CPU
+      command
         // Audio settings
         .audioCodec('aac')
         .audioBitrate(`${quality.audioBitrate}k`)
@@ -355,10 +426,17 @@ export class FFmpegService implements IFFmpegService {
         })
         .on('end', () => {
           this.activeCommands.delete(commandKey);
+          console.log(
+            `  ✅ Successfully encoded ${quality.name} with ${useNvenc ? 'GPU' : 'CPU'}`
+          );
           resolve();
         })
         .on('error', (err) => {
           this.activeCommands.delete(commandKey);
+          console.error(
+            `  ❌ Failed to encode ${quality.name} with ${useNvenc ? 'GPU' : 'CPU'}:`,
+            err.message
+          );
           reject(new Error(`Failed to encode ${quality.name}: ${err.message}`));
         });
 

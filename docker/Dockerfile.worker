@@ -35,18 +35,24 @@ COPY package-lock.json ./
 RUN npm ci --omit=dev
 
 # =============================================================================
-# Stage 3: Production
+# Stage 3: Production with NVIDIA GPU Support
 # =============================================================================
-FROM node:20-alpine AS production
+FROM node:20-bullseye-slim AS production
 
 WORKDIR /app
 
-# Install FFmpeg for video encoding
-RUN apk add --no-cache ffmpeg
+# Install dependencies and FFmpeg with NVIDIA NVENC support
+# Note: FFmpeg with NVENC support is included in Debian repos
+# NVIDIA drivers are injected by NVIDIA Container Runtime (no need to install here)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    ca-certificates \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+RUN groupadd --gid 1001 nodejs && \
+    useradd --uid 1001 --gid nodejs --shell /bin/bash --create-home nodejs
 
 # Create temp directory for video processing
 RUN mkdir -p /app/temp && chown nodejs:nodejs /app/temp

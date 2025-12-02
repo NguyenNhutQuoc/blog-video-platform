@@ -151,7 +151,7 @@ services:
       - blog-network
 
   # ===================================================
-  # 7. Video Worker (Video Encoding Service)
+  # 7. Video Worker (Video Encoding Service with GPU)
   # ===================================================
   video-worker:
     build:
@@ -159,6 +159,17 @@ services:
       dockerfile: docker/Dockerfile.worker
     container_name: blog-video-worker
     restart: unless-stopped
+    # NVIDIA GPU Configuration
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, video, compute, utility]
+    # Increase shared memory for GPU operations
+    shm_size: '2gb'
     environment:
       NODE_ENV: production
       # Database
@@ -177,11 +188,14 @@ services:
       MINIO_USE_SSL: 'false'
       MINIO_ACCESS_KEY: minio_admin
       MINIO_SECRET_KEY: minio_password_change_in_production
-      # Worker
-      WORKER_CONCURRENCY: 2
+      # Worker - Increased concurrency for GPU encoding (3-4x faster than CPU)
+      WORKER_CONCURRENCY: 3
       TEMP_DIR: /app/temp
       FFMPEG_PATH: /usr/bin/ffmpeg
       FFPROBE_PATH: /usr/bin/ffprobe
+      # NVIDIA GPU environment variables
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,video,utility
     volumes:
       - worker_temp:/app/temp
     depends_on:

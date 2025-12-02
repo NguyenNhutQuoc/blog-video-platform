@@ -51,9 +51,46 @@ export class VideoQualityRepository implements IVideoQualityRepository {
     ]);
 
     const result = await this.pool.query<VideoQuality>(
-      `INSERT INTO video_qualities 
+      `INSERT INTO video_qualities
        (video_id, quality_name, retry_priority, status)
        VALUES ${values}
+       RETURNING *`,
+      params
+    );
+
+    return result.rows.map((row) => this.mapRow(row));
+  }
+
+  async upsertBatch(
+    inputs: CreateVideoQualityInput[]
+  ): Promise<VideoQuality[]> {
+    if (inputs.length === 0) return [];
+
+    const values = inputs
+      .map(
+        (_, i) => `($${i * 4 + 1}, $${i * 4 + 2}, $${i * 4 + 3}, $${i * 4 + 4})`
+      )
+      .join(', ');
+
+    const params = inputs.flatMap((input) => [
+      input.videoId,
+      input.qualityName,
+      input.retryPriority,
+      input.status || VideoQualityStatus.PENDING,
+    ]);
+
+    const result = await this.pool.query<VideoQuality>(
+      `INSERT INTO video_qualities
+       (video_id, quality_name, retry_priority, status)
+       VALUES ${values}
+       ON CONFLICT (video_id, quality_name)
+       DO UPDATE SET
+         retry_priority = EXCLUDED.retry_priority,
+         status = EXCLUDED.status,
+         started_at = NULL,
+         completed_at = NULL,
+         error_message = NULL,
+         updated_at = CURRENT_TIMESTAMP
        RETURNING *`,
       params
     );

@@ -27,8 +27,10 @@ import {
 
 export type VideoProcessingStatus =
   | 'uploading'
+  | 'uploaded' // New state: uploaded but not yet processing
   | 'processing'
   | 'ready'
+  | 'partial_ready'
   | 'failed'
   | 'cancelled';
 
@@ -85,6 +87,11 @@ const statusConfig: Record<
     color: 'primary',
     icon: <ScheduleIcon />,
   },
+  uploaded: {
+    label: 'Uploaded',
+    color: 'success',
+    icon: <CheckCircleIcon />,
+  },
   processing: {
     label: 'Processing',
     color: 'primary',
@@ -93,6 +100,11 @@ const statusConfig: Record<
   ready: {
     label: 'Ready',
     color: 'success',
+    icon: <CheckCircleIcon />,
+  },
+  partial_ready: {
+    label: 'Partial Ready',
+    color: 'warning',
     icon: <CheckCircleIcon />,
   },
   failed: {
@@ -140,6 +152,7 @@ export const VideoStatus: React.FC<VideoStatusProps> = ({
 
     try {
       const data = await onFetchStatus(videoId);
+      console.log('Fetched video status:', data);
       setStatus(data);
 
       // Check for completion states
@@ -163,7 +176,7 @@ export const VideoStatus: React.FC<VideoStatusProps> = ({
     // Initial fetch
     fetchStatus();
 
-    // Only poll for non-terminal states
+    // Only poll for non-terminal states (uploaded state is terminal - no need to poll)
     const shouldPoll =
       !status ||
       status.status === 'uploading' ||
@@ -179,7 +192,9 @@ export const VideoStatus: React.FC<VideoStatusProps> = ({
       fetchStatus().then((data) => {
         if (
           data &&
-          (data.status === 'ready' ||
+          (data.status === 'uploaded' ||
+            data.status === 'ready' ||
+            data.status === 'partial_ready' ||
             data.status === 'failed' ||
             data.status === 'cancelled')
         ) {
@@ -212,7 +227,9 @@ export const VideoStatus: React.FC<VideoStatusProps> = ({
 
   const config = statusConfig[status.status];
   const isTerminal =
+    status.status === 'uploaded' ||
     status.status === 'ready' ||
+    status.status === 'partial_ready' ||
     status.status === 'failed' ||
     status.status === 'cancelled';
 
@@ -302,6 +319,14 @@ export const VideoStatus: React.FC<VideoStatusProps> = ({
           </IconButton>
         </Box>
       </Box>
+
+      {/* Uploaded message - ready to create post */}
+      {status.status === 'uploaded' && (
+        <Alert severity="info" sx={{ mx: 2, mb: 2 }}>
+          Video uploaded successfully! You can now create your post. The video
+          will be processed in the background and will be available shortly.
+        </Alert>
+      )}
 
       {/* Error message */}
       {status.status === 'failed' && status.error && (

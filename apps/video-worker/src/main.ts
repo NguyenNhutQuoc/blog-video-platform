@@ -13,6 +13,8 @@ import {
   getPool,
   PostgresVideoRepository,
   createVideoQualityRepository,
+  createNotificationService,
+  createQualityRetryQueueService,
 } from '@blog/backend/infrastructure';
 import * as fs from 'fs';
 
@@ -75,6 +77,20 @@ async function main() {
     }
     const videoQualityRepository = createVideoQualityRepository(pool);
 
+    // Initialize notification service
+    console.log('📢 Initializing notification service...');
+    const notificationService = createNotificationService();
+
+    // Initialize quality retry queue
+    console.log('🔄 Initializing quality retry queue...');
+    const qualityRetryQueue = createQualityRetryQueueService({
+      redis: {
+        host: env.REDIS_HOST,
+        port: env.REDIS_PORT,
+        password: env.REDIS_PASSWORD,
+      },
+    });
+
     // Create worker with dependencies
     const worker = createVideoEncodingWorker(
       {
@@ -92,6 +108,8 @@ async function main() {
         ffmpegService,
         videoRepository,
         videoQualityRepository,
+        notificationService,
+        qualityRetryQueue,
       }
     );
 
@@ -104,6 +122,7 @@ async function main() {
     const shutdown = async () => {
       console.log('\n🛑 Received shutdown signal...');
       await worker.close();
+      await qualityRetryQueue.close();
       await db.destroy();
       process.exit(0);
     };

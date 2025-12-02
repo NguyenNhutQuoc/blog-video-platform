@@ -27,16 +27,14 @@ import {
   NavigationBar,
   RichTextEditor,
   VideoUpload,
-  VideoStatus,
+  VideoUploadSuccess,
 } from '@blog/shared-ui-kit';
-import type { VideoStatusData } from '@blog/shared-ui-kit';
 import { useAuth } from '../../../providers/AuthProvider';
 import {
   useCreatePost,
   useCategories,
   useTags,
   useVideoUpload,
-  useVideoStatus,
   type Category,
   type Tag,
 } from '@blog/shared-data-access';
@@ -74,13 +72,22 @@ export default function CreatePostPage() {
 
   // Video upload state
   const [uploadedVideoId, setUploadedVideoId] = useState<string | null>(null);
+  const [uploadedVideoMeta, setUploadedVideoMeta] = useState<{
+    filename: string;
+    fileSize: number;
+  } | null>(null);
   const { generateUploadUrl, confirmUpload, isGeneratingUrl, isConfirming } =
     useVideoUpload();
-  const { data: videoStatus } = useVideoStatus(uploadedVideoId);
 
   // Video upload handlers
   const handleVideoUploadStart = useCallback(
     async (file: File) => {
+      // Store file metadata for display later
+      setUploadedVideoMeta({
+        filename: file.name,
+        fileSize: file.size,
+      });
+
       const result = await generateUploadUrl({
         filename: file.name,
         mimeType: file.type,
@@ -109,34 +116,6 @@ export default function CreatePostPage() {
   const handleVideoUploadError = useCallback((error: Error) => {
     console.error('Video upload error:', error);
   }, []);
-
-  const handleVideoReady = useCallback((data: VideoStatusData) => {
-    console.log('Video ready:', data);
-  }, []);
-
-  const fetchVideoStatus = useCallback(
-    async (videoId: string): Promise<VideoStatusData> => {
-      // This will use the cached data from useVideoStatus
-      if (videoStatus && videoStatus.id === videoId) {
-        return {
-          videoId: videoStatus.id,
-          status: videoStatus.status,
-          progress: videoStatus.progress,
-          thumbnailUrl: videoStatus.thumbnailUrl,
-          hlsUrl: videoStatus.hlsUrl,
-          duration: videoStatus.duration,
-          qualities: videoStatus.qualities,
-          error: videoStatus.error,
-        };
-      }
-      // Return minimal status if not cached yet
-      return {
-        videoId,
-        status: 'processing',
-      };
-    },
-    [videoStatus]
-  );
 
   const {
     control,
@@ -339,10 +318,14 @@ export default function CreatePostPage() {
               )}
 
               {uploadedVideoId && (
-                <VideoStatus
+                <VideoUploadSuccess
                   videoId={uploadedVideoId}
-                  onFetchStatus={fetchVideoStatus}
-                  onReady={handleVideoReady}
+                  filename={uploadedVideoMeta?.filename}
+                  fileSize={uploadedVideoMeta?.fileSize}
+                  onRemove={() => {
+                    setUploadedVideoId(null);
+                    setUploadedVideoMeta(null);
+                  }}
                   showDetails
                 />
               )}

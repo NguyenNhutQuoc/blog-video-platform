@@ -80,8 +80,8 @@ export class ConfirmUploadUseCase {
       );
     }
 
-    // 4. Update video status to processing
-    video.startProcessing();
+    // 4. Update video status to uploaded (not processing yet)
+    video.markAsUploaded();
     const videoData = video.toJSON();
 
     // Update uploadedAt timestamp
@@ -95,17 +95,17 @@ export class ConfirmUploadUseCase {
     const videoToSave = new VideoEntity(updatedVideo);
     await this.deps.videoRepository.save(videoToSave);
 
-    // 5. Queue video for processing
+    // 5. Queue video for processing (will be processed by worker)
     const jobId = await this.deps.queueVideoForProcessing(
       input.videoId,
       rawFilePath
     );
 
-    // 6. Return result
+    // 6. Return result with 'uploaded' status
     return success({
       videoId: input.videoId,
-      status: VideoStatus.PROCESSING,
-      message: `Video queued for processing. Job ID: ${jobId}`,
+      status: VideoStatus.UPLOADED,
+      message: `Video uploaded successfully and queued for processing. You can now create your post. Job ID: ${jobId}`,
     });
   }
 }

@@ -43,3 +43,8 @@ export type {
   EncodingProgressCallback,
 } from './ffmpeg.service.interface.js';
 export { DEFAULT_HLS_QUALITIES } from './ffmpeg.service.interface.js';
+export type {
+  INotificationService,
+  VideoNotificationData,
+} from './notification.service.interface.js';
+export { NotificationType } from './notification.service.interface.js';

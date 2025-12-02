@@ -23,6 +23,12 @@ export interface IVideoQualityRepository {
   createBatch(inputs: CreateVideoQualityInput[]): Promise<VideoQuality[]>;
 
   /**
+   * Upsert multiple video quality records in batch (insert or update if exists)
+   * Uses ON CONFLICT DO UPDATE to handle duplicate keys gracefully
+   */
+  upsertBatch(inputs: CreateVideoQualityInput[]): Promise<VideoQuality[]>;
+
+  /**
    * Find a specific quality for a video
    */
   findByVideoAndQuality(

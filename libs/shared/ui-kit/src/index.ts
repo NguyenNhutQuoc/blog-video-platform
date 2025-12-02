@@ -16,4 +16,5 @@ export * from './components/RichTextEditor';
 export * from './components/Skeleton';
 export * from './components/VideoUpload';
 export * from './components/VideoStatus';
+export * from './components/VideoUploadSuccess';
 export * from './components/VideoPlayer';

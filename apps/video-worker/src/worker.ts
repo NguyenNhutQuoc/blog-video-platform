@@ -23,9 +23,12 @@ import {
   VideoQualityStatus,
   CreateVideoQualityInput,
 } from '@blog/backend/core';
+import type { INotificationService } from '@blog/backend/core';
 import {
   VIDEO_ENCODING_QUEUE,
   ENCODING_CONFIG,
+  QualityRetryQueueService,
+  QualityRetryJobData,
 } from '@blog/backend/infrastructure';
 import { VideoStatus } from '@blog/shared/domain';
 
@@ -45,6 +48,8 @@ export interface WorkerDependencies {
   ffmpegService: IFFmpegService;
   videoRepository: IVideoRepository;
   videoQualityRepository: IVideoQualityRepository;
+  notificationService: INotificationService;
+  qualityRetryQueue: QualityRetryQueueService;
 }
 
 export class VideoEncodingWorker {
@@ -163,8 +168,14 @@ export class VideoEncodingWorker {
         fs.mkdirSync(workDir, { recursive: true });
       }
 
-      // Update video status to processing
-      await this.updateVideoStatus(videoId, VideoStatus.PROCESSING);
+      // Update video status to processing (from uploaded state)
+      const videoEntity = await this.deps.videoRepository.findById(videoId);
+      if (!videoEntity) {
+        throw new Error(`Video ${videoId} not found`);
+      }
+      videoEntity.startProcessing();
+      await this.deps.videoRepository.save(videoEntity);
+      console.log(`📝 Updated video ${videoId} status to PROCESSING`);
       await job.updateProgress(5);
 
       // Check for cancellation flag
@@ -221,6 +232,7 @@ export class VideoEncodingWorker {
       );
 
       // Initialize video quality records before encoding
+      // Use upsertBatch to handle job retries gracefully (avoid duplicate key errors)
       const qualityNames = ['360p', '480p', '720p', '1080p'];
       const qualityInputs: CreateVideoQualityInput[] = qualityNames
         .filter((name) => {
@@ -240,7 +252,7 @@ export class VideoEncodingWorker {
           status: VideoQualityStatus.ENCODING,
         }));
 
-      await this.deps.videoQualityRepository.createBatch(qualityInputs);
+      await this.deps.videoQualityRepository.upsertBatch(qualityInputs);
       console.log(`  Initialized ${qualityInputs.length} quality records`);
 
       const hlsDir = path.join(workDir, 'hls');
@@ -336,10 +348,28 @@ export class VideoEncodingWorker {
       const readyCount = successQualities.length;
       const minQualities = ENCODING_CONFIG.MIN_QUALITIES_FOR_PLAYBACK;
 
+      // Get video details for notifications
+      const video = await this.deps.videoRepository.findById(videoId);
+      if (!video) {
+        throw new Error(`Video ${videoId} not found in database`);
+      }
+
+      // Extract user ID from postId (will need to fetch Post to get authorId in notification service)
+      const userId = video.toJSON().postId || 'unknown';
+
       let videoStatus: (typeof VideoStatus)[keyof typeof VideoStatus];
       if (readyCount >= minQualities && failedQualities.length === 0) {
         videoStatus = VideoStatus.READY;
         console.log(`  ✅ All qualities encoded successfully - Status: READY`);
+
+        // Notify user that video is ready
+        await this.deps.notificationService.notifyVideoReady({
+          videoId,
+          userId,
+          thumbnailUrl,
+          hlsUrl: hlsMasterUrl,
+          availableQualities: successQualities,
+        });
       } else if (readyCount >= minQualities) {
         videoStatus = VideoStatus.PARTIAL_READY;
         console.log(
@@ -347,13 +377,51 @@ export class VideoEncodingWorker {
             readyCount + failedQualities.length
           } qualities ready - Status: PARTIAL_READY`
         );
-        // TODO: Trigger notification for partial ready
-        // TODO: Queue retry jobs for failed qualities
+
+        // Notify user that video is playable but some qualities failed
+        await this.deps.notificationService.notifyVideoPartialReady({
+          videoId,
+          userId,
+          thumbnailUrl,
+          hlsUrl: hlsMasterUrl,
+          availableQualities: successQualities,
+          failedQualities: failedQualities.map((f) => f.quality),
+        });
+
+        // Queue retry jobs for failed qualities
+        console.log(
+          `  🔄 Queueing retry jobs for ${failedQualities.length} failed qualities...`
+        );
+        for (const failed of failedQualities) {
+          const retryJobData: QualityRetryJobData = {
+            videoId,
+            qualityName: failed.quality,
+            rawFilePath, // Keep original raw file path for retry
+            retryCount: 0,
+            priority:
+              ENCODING_CONFIG.QUALITY_RETRY_PRIORITY[failed.quality] || 4,
+          };
+
+          await this.deps.qualityRetryQueue.addRetryJob(retryJobData);
+          console.log(
+            `    📤 Queued retry for ${failed.quality} (priority: ${retryJobData.priority})`
+          );
+        }
       } else {
         videoStatus = VideoStatus.FAILED;
         console.log(
           `  ❌ Only ${readyCount} qualities ready (need ${minQualities}) - Status: FAILED`
         );
+
+        // Notify user that video encoding failed
+        await this.deps.notificationService.notifyVideoFailed({
+          videoId,
+          userId,
+          errorMessage: `Only ${readyCount} out of ${
+            readyCount + failedQualities.length
+          } qualities encoded successfully. Minimum ${minQualities} required.`,
+          failedQualities: failedQualities.map((f) => f.quality),
+        });
       }
 
       await this.deps.videoRepository.update(videoId, {
@@ -409,14 +477,6 @@ export class VideoEncodingWorker {
 
       throw error;
     }
-  }
-
-  private async updateVideoStatus(
-    videoId: string,
-    status: (typeof VideoStatus)[keyof typeof VideoStatus]
-  ): Promise<void> {
-    await this.deps.videoRepository.update(videoId, { status });
-    console.log(`📝 Updated video ${videoId} status to ${status}`);
   }
 
   private async downloadFromStorage(

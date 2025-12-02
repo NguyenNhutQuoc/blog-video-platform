@@ -17,7 +17,14 @@ export interface VideoUploadUrlResponse {
 
 export interface VideoStatusResponse {
   id: string;
-  status: 'uploading' | 'processing' | 'ready' | 'failed' | 'cancelled';
+  status:
+    | 'uploading'
+    | 'uploaded'
+    | 'processing'
+    | 'ready'
+    | 'partial_ready'
+    | 'failed'
+    | 'cancelled';
   progress?: number;
   thumbnailUrl?: string;
   hlsUrl?: string;
@@ -100,7 +107,13 @@ export const useVideoStatus = (
     refetchInterval: (query) => {
       // Only refetch for non-terminal states
       const status = query.state.data?.status;
-      if (status === 'ready' || status === 'failed' || status === 'cancelled') {
+      if (
+        status === 'uploaded' ||
+        status === 'ready' ||
+        status === 'partial_ready' ||
+        status === 'failed' ||
+        status === 'cancelled'
+      ) {
         return false;
       }
       return options?.refetchInterval ?? 3000;
