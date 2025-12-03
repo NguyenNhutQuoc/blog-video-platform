@@ -170,6 +170,13 @@ export class GetPostCommentsUseCase {
       );
     }
 
+    console.log(
+      'Liked comment IDs for user',
+      input.userId,
+      ':',
+      Array.from(likedCommentIds)
+    );
+
     // 9. Get reply count for root comments
     const commentsWithMetadata = await Promise.all(
       comments.map(async (comment) => {

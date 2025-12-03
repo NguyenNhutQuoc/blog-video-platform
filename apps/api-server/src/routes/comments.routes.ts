@@ -107,6 +107,11 @@ export function createCommentsRoutes(deps: CommentRoutesDependencies): Router {
     '/posts/:postId/comments',
     deps.optionalAuthMiddleware,
     asyncHandler(async (req: Request, res: Response) => {
+      console.log('GET /comments - req.user:', req.user);
+      console.log(
+        'GET /comments - Authorization header:',
+        req.headers.authorization ? 'Present' : 'Missing'
+      );
       const result = await getPostCommentsUseCase.execute({
         postId: req.params.postId,
         parentId: req.query.parentId as string | undefined,

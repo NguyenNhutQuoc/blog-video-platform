@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useQueryClient, InfiniteData } from '@tanstack/react-query';
 import {
   Container,
   Box,
@@ -44,6 +45,7 @@ import {
   useUnlikePost,
   useLikeComment,
   useUnlikeComment,
+  commentKeys,
   Comment,
   CursorPaginatedResponse,
 } from '@blog/shared-data-access';
@@ -66,7 +68,11 @@ interface CommentWithRepliesProps {
   onReplyClick: (commentId: string) => void;
   replyingTo: string | null;
   onCancelReply: () => void;
-  onLikeComment: (commentId: string, isLiked: boolean) => void;
+  onLikeComment: (
+    commentId: string,
+    isLiked: boolean,
+    parentId?: string
+  ) => void;
 }
 
 function CommentWithReplies({
@@ -78,12 +84,13 @@ function CommentWithReplies({
   onCancelReply,
   onLikeComment,
 }: CommentWithRepliesProps) {
+  const viewerKey = currentUserId ?? 'guest';
   const [showReplies, setShowReplies] = useState(false);
   const {
     data: repliesData,
     fetchNextPage,
     hasNextPage,
-  } = useCommentReplies(postId, showReplies ? comment.id : '');
+  } = useCommentReplies(postId, showReplies ? comment.id : '', viewerKey);
   const createCommentMutation = useCreateComment();
   const deleteCommentMutation = useDeleteComment();
 
@@ -114,22 +121,16 @@ function CommentWithReplies({
     }
   };
 
-  const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this comment?')) {
-      try {
-        await deleteCommentMutation.mutateAsync({
-          commentId: comment.id,
-          postId,
-        });
-      } catch (error) {
-        console.error('Delete comment failed:', error);
-      }
-    }
-  };
-
-  const replies = repliesData?.pages.flatMap((page) => page.data) ?? [];
+  const replies =
+    repliesData?.pages.flatMap((page) =>
+      Array.isArray(page) ? page : page?.data ?? []
+    ) ?? [];
   const isShowingReplyForm = replyingTo === comment.id;
-  const canDelete = currentUserId === comment.author.id;
+  const isOwnComment = currentUserId === comment.author.id;
+  const commentDisplayName = isOwnComment
+    ? 'me'
+    : comment.author.fullName || comment.author.username;
+  const commentDisplayUsername = isOwnComment ? 'me' : comment.author.username;
 
   return (
     <Box>
@@ -137,8 +138,8 @@ function CommentWithReplies({
         id={comment.id}
         content={comment.content}
         author={{
-          username: comment.author.username,
-          fullName: comment.author.fullName || comment.author.username,
+          username: commentDisplayUsername,
+          fullName: commentDisplayName,
           avatarUrl: comment.author.avatarUrl || undefined,
         }}
         createdAt={comment.createdAt}
@@ -206,40 +207,52 @@ function CommentWithReplies({
         <Box
           sx={{ ml: 6, borderLeft: '2px solid', borderColor: 'divider', pl: 2 }}
         >
-          {replies.map((reply) => (
-            <Box key={reply.id} sx={{ py: 1 }}>
-              <CommentCard
-                id={reply.id}
-                content={reply.content}
-                author={{
-                  username: reply.author.username,
-                  fullName: reply.author.fullName || reply.author.username,
-                  avatarUrl: reply.author.avatarUrl || undefined,
-                }}
-                createdAt={reply.createdAt}
-                likeCount={reply.likeCount}
-                isLiked={reply.isLiked}
-                onLike={() => onLikeComment(reply.id, reply.isLiked ?? false)}
-              />
-              {currentUserId === reply.author.id && (
-                <Button
-                  size="small"
-                  color="error"
-                  sx={{ ml: 6, mt: -1 }}
-                  onClick={() => {
-                    if (window.confirm('Delete this reply?')) {
-                      deleteCommentMutation.mutate({
-                        commentId: reply.id,
-                        postId,
-                      });
-                    }
+          {replies.map((reply) => {
+            const isOwnReply = currentUserId === reply.author.id;
+            const replyDisplayName = isOwnReply
+              ? 'me'
+              : reply.author.fullName || reply.author.username;
+            const replyDisplayUsername = isOwnReply
+              ? 'me'
+              : reply.author.username;
+
+            return (
+              <Box key={reply.id} sx={{ py: 1 }}>
+                <CommentCard
+                  id={reply.id}
+                  content={reply.content}
+                  author={{
+                    username: replyDisplayUsername,
+                    fullName: replyDisplayName,
+                    avatarUrl: reply.author.avatarUrl || undefined,
                   }}
-                >
-                  Delete
-                </Button>
-              )}
-            </Box>
-          ))}
+                  createdAt={reply.createdAt}
+                  likeCount={reply.likeCount}
+                  isLiked={reply.isLiked}
+                  onLike={() =>
+                    onLikeComment(reply.id, reply.isLiked ?? false, comment.id)
+                  }
+                />
+                {currentUserId === reply.author.id && (
+                  <Button
+                    size="small"
+                    color="error"
+                    sx={{ ml: 6, mt: -1 }}
+                    onClick={() => {
+                      if (window.confirm('Delete this reply?')) {
+                        deleteCommentMutation.mutate({
+                          commentId: reply.id,
+                          postId,
+                        });
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                )}
+              </Box>
+            );
+          })}
           {hasNextPage && (
             <Button size="small" onClick={() => fetchNextPage()}>
               Load more replies
@@ -247,20 +260,6 @@ function CommentWithReplies({
           )}
         </Box>
       </Collapse>
-
-      {/* Delete button for comment owner */}
-      {canDelete && (
-        <Box sx={{ ml: 6 }}>
-          <Button
-            size="small"
-            color="error"
-            onClick={handleDelete}
-            disabled={deleteCommentMutation.isPending}
-          >
-            Delete
-          </Button>
-        </Box>
-      )}
     </Box>
   );
 }
@@ -268,23 +267,48 @@ function CommentWithReplies({
 export default function PostDetailPage() {
   const params = useParams();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const postId = params.id as string;
+  const viewerKey = user?.id ?? 'guest';
 
-  const { data: post, isLoading: postLoading } = usePost(postId);
+  // Wait for auth to complete before fetching post/comments to ensure correct isLiked status
+  const {
+    data: post,
+    isLoading: postLoading,
+    refetch: refetchPost,
+  } = usePost(postId, user?.id);
   console.log('Post data:', post);
   const {
     data: commentsData,
     fetchNextPage,
     hasNextPage,
-  } = usePostComments(postId);
+    refetch: refetchComments,
+  } = usePostComments(postId, user?.id);
   const createCommentMutation = useCreateComment();
   const likePostMutation = useLikePost();
   const unlikePostMutation = useUnlikePost();
   const likeCommentMutation = useLikeComment();
   const unlikeCommentMutation = useUnlikeComment();
+
+  // Track previous user id to detect login/logout transitions
+  const prevUserIdRef = useRef<string | undefined>(undefined);
+
+  // Refetch post and comments when user changes (login/logout)
+  useEffect(() => {
+    const prevUserId = prevUserIdRef.current;
+    const currentUserId = user?.id;
+
+    // If user changed (login or logout), refetch data to get correct isLiked status
+    if (prevUserId !== currentUserId && !authLoading) {
+      refetchPost();
+      refetchComments();
+    }
+
+    prevUserIdRef.current = currentUserId;
+  }, [user?.id, authLoading, refetchPost, refetchComments]);
 
   console.log('Comments data:', commentsData);
   const {
@@ -302,6 +326,17 @@ export default function PostDetailPage() {
   // Use isLiked from post data (from API)
   const isLiked = post?.isLiked ?? false;
   const isBookmarked = false; // TODO: Implement bookmarked state from API
+  const rootComments =
+    commentsData?.pages.flatMap(
+      (page: CursorPaginatedResponse<Comment> | Comment[]) =>
+        Array.isArray(page) ? page : page?.data ?? []
+    ) ?? [];
+
+  console.log('Root comments:', rootComments);
+  console.log(
+    'Comments isLiked status:',
+    rootComments.map((c) => ({ id: c.id, isLiked: c.isLiked }))
+  );
 
   const handleLike = async () => {
     try {
@@ -317,7 +352,8 @@ export default function PostDetailPage() {
 
   const handleLikeComment = async (
     commentId: string,
-    isCommentLiked: boolean
+    isCommentLiked: boolean,
+    parentId?: string
   ) => {
     if (!user) {
       navigate('/auth/login');
@@ -325,9 +361,17 @@ export default function PostDetailPage() {
     }
     try {
       if (isCommentLiked) {
-        await unlikeCommentMutation.mutateAsync({ commentId, postId });
+        await unlikeCommentMutation.mutateAsync({
+          commentId,
+          postId,
+          parentId,
+        });
       } else {
-        await likeCommentMutation.mutateAsync({ commentId, postId });
+        await likeCommentMutation.mutateAsync({
+          commentId,
+          postId,
+          parentId,
+        });
       }
     } catch (error) {
       console.error('Comment like action failed:', error);
@@ -359,7 +403,8 @@ export default function PostDetailPage() {
     navigate('/');
   };
 
-  if (postLoading) {
+  // Show loading while auth is checking or post is loading
+  if (authLoading || postLoading) {
     return (
       <>
         <NavigationBar
@@ -669,13 +714,8 @@ export default function PostDetailPage() {
 
           {/* Comments List */}
           <Stack spacing={2} divider={<Divider />}>
-            {commentsData?.pages
-              .flatMap((page: any) => {
-                console.log('Comments page data:', page);
-                return page || [];
-              })
-              .filter((comment): comment is Comment => comment != null)
-              .map((comment: Comment) => (
+            {rootComments.length > 0 ? (
+              rootComments.map((comment: Comment) => (
                 <CommentWithReplies
                   key={comment.id}
                   comment={comment}
@@ -686,8 +726,8 @@ export default function PostDetailPage() {
                   onCancelReply={() => setReplyingTo(null)}
                   onLikeComment={handleLikeComment}
                 />
-              ))}
-            {!commentsData?.pages[0] && (
+              ))
+            ) : (
               <Typography
                 variant="body2"
                 color="text.secondary"

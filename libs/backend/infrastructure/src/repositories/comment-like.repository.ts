@@ -69,12 +69,32 @@ export class PostgresCommentLikeRepository implements ICommentLikeRepository {
       .where('comment_id', 'in', commentIds)
       .execute();
 
-    const likedSet = new Set(rows.map((r) => r.comment_id));
+    console.log(
+      'isCommentsLikedByUser - fetched rows for user',
+      userId,
+      ':',
+      rows
+    );
+
+    const likedSet = new Set(rows.map((r: any) => r.commentId));
+    console.log(
+      'isCommentsLikedByUser - liked comment IDs for user',
+      userId,
+      ':',
+      likedSet
+    );
     const result = new Map<string, boolean>();
 
     for (const id of commentIds) {
       result.set(id, likedSet.has(id));
     }
+
+    console.log(
+      'Liked comments for user',
+      userId,
+      ':',
+      Array.from(result.entries())
+    );
 
     return result;
   }

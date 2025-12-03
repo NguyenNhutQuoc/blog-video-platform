@@ -3,7 +3,8 @@ import {
   useQueryClient,
   useInfiniteQuery,
 } from '@tanstack/react-query';
-import { apiClient } from '../lib/api-client';
+import { apiClient, getAccessToken } from '../lib/api-client';
+import { postKeys } from './usePosts';
 import type { Comment, CursorPaginatedResponse } from '../lib/types';
 
 // Query keys
@@ -15,12 +16,14 @@ export const commentKeys = {
 };
 
 // Get root comments for a post (cursor-based)
-export const usePostComments = (postId: string) => {
+export const usePostComments = (postId: string, viewerId?: string) => {
   return useInfiniteQuery({
-    queryKey: commentKeys.byPost(postId),
+    queryKey: [...commentKeys.byPost(postId), viewerId ?? 'guest'],
     queryFn: async ({
       pageParam,
     }): Promise<CursorPaginatedResponse<Comment>> => {
+      const token = getAccessToken();
+      console.log('Fetching comments with token:', token ? 'YES' : 'NO');
       const response = await apiClient.get<CursorPaginatedResponse<Comment>>(
         `/posts/${postId}/comments`,
         {
@@ -28,6 +31,10 @@ export const usePostComments = (postId: string) => {
         }
       );
       console.log('Fetched comments response:', response.data);
+      console.log(
+        'Comments isLiked:',
+        response.data?.map?.((c: Comment) => ({ id: c.id, isLiked: c.isLiked }))
+      );
       return response.data;
     },
     getNextPageParam: (lastPage) => {
@@ -39,9 +46,13 @@ export const usePostComments = (postId: string) => {
 };
 
 // Get replies for a comment (cursor-based)
-export const useCommentReplies = (postId: string, parentId: string) => {
+export const useCommentReplies = (
+  postId: string,
+  parentId: string,
+  viewerId?: string
+) => {
   return useInfiniteQuery({
-    queryKey: commentKeys.replies(postId, parentId),
+    queryKey: [...commentKeys.replies(postId, parentId), viewerId ?? 'guest'],
     queryFn: async ({
       pageParam,
     }): Promise<CursorPaginatedResponse<Comment>> => {
@@ -91,7 +102,7 @@ export const useCreateComment = () => {
         });
       }
       // Invalidate post to update commentCount
-      queryClient.invalidateQueries({ queryKey: ['posts', postId] });
+      queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) });
     },
   });
 };
@@ -113,7 +124,7 @@ export const useDeleteComment = () => {
       // Invalidate all comments for this post
       queryClient.invalidateQueries({ queryKey: commentKeys.byPost(postId) });
       // Invalidate post to update commentCount
-      queryClient.invalidateQueries({ queryKey: ['posts', postId] });
+      queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) });
     },
   });
 };
@@ -128,9 +139,9 @@ export const useLikePost = () => {
     },
     onSuccess: (_, postId) => {
       // Invalidate specific post
-      queryClient.invalidateQueries({ queryKey: ['posts', postId] });
+      queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) });
       // Invalidate posts list
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: postKeys.lists() });
     },
   });
 };
@@ -145,9 +156,9 @@ export const useUnlikePost = () => {
     },
     onSuccess: (_, postId) => {
       // Invalidate specific post
-      queryClient.invalidateQueries({ queryKey: ['posts', postId] });
+      queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) });
       // Invalidate posts list
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: postKeys.lists() });
     },
   });
 };

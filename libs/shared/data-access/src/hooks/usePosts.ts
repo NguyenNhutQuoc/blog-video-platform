@@ -64,9 +64,9 @@ export const useInfinitePosts = (filters: Omit<PostFilters, 'cursor'> = {}) => {
 };
 
 // Get single post - transforms backend response to flat Post structure
-export const usePost = (idOrSlug: string) => {
+export const usePost = (idOrSlug: string, viewerId?: string) => {
   return useQuery({
-    queryKey: postKeys.detail(idOrSlug),
+    queryKey: [...postKeys.detail(idOrSlug), viewerId ?? 'guest'],
     queryFn: async (): Promise<Post> => {
       // Backend returns { post, author, categories?, tags?, video? }
       const response = await apiClient.get<PostDetailResponse>(
