@@ -169,10 +169,27 @@ export class VideoEncodingWorker {
       }
 
       // Update video status to processing (from uploaded state)
-      const videoEntity = await this.deps.videoRepository.findById(videoId);
+      // Use findByIdIncludeDeleted to check if video was deleted
+      const videoEntity =
+        await this.deps.videoRepository.findByIdIncludeDeleted(videoId);
       if (!videoEntity) {
         throw new Error(`Video ${videoId} not found`);
       }
+
+      // Check if video was deleted while waiting in queue
+      const videoData = videoEntity.toJSON();
+      if (videoData.deletedAt) {
+        console.log(`🛑 Video ${videoId} was deleted, skipping processing`);
+        return {
+          videoId,
+          hlsMasterUrl: '',
+          thumbnailUrl: '',
+          qualities: [],
+          duration: 0,
+          processingTime: Date.now() - startTime,
+        };
+      }
+
       videoEntity.startProcessing();
       await this.deps.videoRepository.save(videoEntity);
       console.log(`📝 Updated video ${videoId} status to PROCESSING`);
@@ -563,11 +580,17 @@ export class VideoEncodingWorker {
   }
 
   /**
-   * Check if job has been cancelled
+   * Check if job has been cancelled or video deleted
    */
   private async isCancelled(job: Job<EncodingJobData>): Promise<boolean> {
-    const video = await this.deps.videoRepository.findById(job.data.videoId);
-    return video?.status === VideoStatus.CANCELLED;
+    const video = await this.deps.videoRepository.findByIdIncludeDeleted(
+      job.data.videoId
+    );
+    if (!video) return true;
+
+    const videoData = video.toJSON();
+    // Consider cancelled if status is CANCELLED or video was deleted
+    return video.status === VideoStatus.CANCELLED || !!videoData.deletedAt;
   }
 
   /**

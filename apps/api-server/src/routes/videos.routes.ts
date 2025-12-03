@@ -10,6 +10,10 @@ import {
   GenerateUploadUrlUseCase,
   ConfirmUploadUseCase,
   GetVideoStatusUseCase,
+  DeleteVideoUseCase,
+  RestoreVideoUseCase,
+  CleanupOrphanVideosUseCase,
+  CleanupTrashVideosUseCase,
 } from '@blog/backend/core';
 import { asyncHandler, createError } from '../middleware/error.middleware.js';
 import type { VideoRoutesDependencies } from './types.js';
@@ -32,6 +36,28 @@ export function createVideosRoutes(deps: VideoRoutesDependencies): Router {
   const getVideoStatusUseCase = new GetVideoStatusUseCase({
     videoRepository: deps.videoRepository,
     videoQueueService: deps.videoQueueService,
+  });
+
+  const deleteVideoUseCase = new DeleteVideoUseCase({
+    videoRepository: deps.videoRepository,
+    storageService: deps.storageService,
+    videoQueueService: deps.videoQueueService,
+  });
+
+  const restoreVideoUseCase = new RestoreVideoUseCase({
+    videoRepository: deps.videoRepository,
+    videoQueueService: deps.videoQueueService,
+  });
+
+  const cleanupOrphanVideosUseCase = new CleanupOrphanVideosUseCase({
+    videoRepository: deps.videoRepository,
+    storageService: deps.storageService,
+    videoQueueService: deps.videoQueueService,
+  });
+
+  const cleanupTrashVideosUseCase = new CleanupTrashVideosUseCase({
+    videoRepository: deps.videoRepository,
+    storageService: deps.storageService,
   });
 
   /**
@@ -128,6 +154,183 @@ export function createVideosRoutes(deps: VideoRoutesDependencies): Router {
           result.error.code,
           result.error.details
         );
+      }
+
+      res.json({
+        success: true,
+        data: result.data,
+      });
+    })
+  );
+
+  /**
+   * @openapi
+   * /api/videos/deleted:
+   *   get:
+   *     summary: List deleted videos
+   *     description: Returns list of soft-deleted videos for the authenticated user
+   *     tags: [Videos]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: List of deleted videos
+   *       401:
+   *         description: Authentication required
+   */
+  router.get(
+    '/deleted',
+    deps.authMiddleware,
+    asyncHandler(async (req: Request, res: Response) => {
+      if (!req.user) {
+        throw createError('Authentication required', 401, 'UNAUTHORIZED');
+      }
+
+      const deletedVideos = await deps.videoRepository.findDeletedByUserId(
+        req.user.userId
+      );
+
+      res.json({
+        success: true,
+        data: {
+          videos: deletedVideos.map((video) => {
+            const data = video.toJSON();
+            return {
+              id: data.id,
+              originalFilename: data.originalFilename,
+              status: data.status,
+              thumbnailUrl: data.thumbnailUrl,
+              duration: data.duration,
+              fileSize: data.fileSize,
+              createdAt: data.createdAt,
+              deletedAt: data.deletedAt,
+            };
+          }),
+        },
+      });
+    })
+  );
+
+  /**
+   * @openapi
+   * /api/videos/admin/cleanup-orphans:
+   *   post:
+   *     summary: Cleanup orphan videos (Admin only)
+   *     description: |
+   *       Cleans up videos uploaded but never attached to a post.
+   *       This is typically run as a scheduled job.
+   *     tags: [Videos, Admin]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               orphanAgeHours:
+   *                 type: integer
+   *                 default: 24
+   *                 description: Hours after which orphan videos are eligible for cleanup
+   *               batchSize:
+   *                 type: integer
+   *                 default: 100
+   *                 description: Maximum videos to cleanup in one run
+   *               dryRun:
+   *                 type: boolean
+   *                 default: false
+   *                 description: If true, only report without deleting
+   *     responses:
+   *       200:
+   *         description: Cleanup results
+   *       401:
+   *         description: Authentication required
+   *       403:
+   *         description: Admin access required
+   */
+  router.post(
+    '/admin/cleanup-orphans',
+    deps.authMiddleware,
+    asyncHandler(async (req: Request, res: Response) => {
+      if (!req.user) {
+        throw createError('Authentication required', 401, 'UNAUTHORIZED');
+      }
+
+      // TODO: Add admin role check
+      // For now, allow any authenticated user (should be restricted in production)
+
+      const result = await cleanupOrphanVideosUseCase.execute({
+        orphanAgeHours: req.body.orphanAgeHours,
+        batchSize: req.body.batchSize,
+        dryRun: req.body.dryRun,
+      });
+
+      if (!result.success) {
+        throw createError(result.error.message, 500, result.error.code);
+      }
+
+      res.json({
+        success: true,
+        data: result.data,
+      });
+    })
+  );
+
+  /**
+   * @openapi
+   * /api/videos/admin/cleanup-trash:
+   *   post:
+   *     summary: Cleanup expired deleted videos (Admin only)
+   *     description: |
+   *       Permanently deletes soft-deleted videos older than retention period.
+   *       This is typically run as a scheduled job.
+   *     tags: [Videos, Admin]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               retentionDays:
+   *                 type: integer
+   *                 default: 30
+   *                 description: Days after which deleted videos are permanently removed
+   *               batchSize:
+   *                 type: integer
+   *                 default: 100
+   *                 description: Maximum videos to cleanup in one run
+   *               dryRun:
+   *                 type: boolean
+   *                 default: false
+   *                 description: If true, only report without deleting
+   *     responses:
+   *       200:
+   *         description: Cleanup results
+   *       401:
+   *         description: Authentication required
+   *       403:
+   *         description: Admin access required
+   */
+  router.post(
+    '/admin/cleanup-trash',
+    deps.authMiddleware,
+    asyncHandler(async (req: Request, res: Response) => {
+      if (!req.user) {
+        throw createError('Authentication required', 401, 'UNAUTHORIZED');
+      }
+
+      // TODO: Add admin role check
+
+      const result = await cleanupTrashVideosUseCase.execute({
+        retentionDays: req.body.retentionDays,
+        batchSize: req.body.batchSize,
+        dryRun: req.body.dryRun,
+      });
+
+      if (!result.success) {
+        throw createError(result.error.message, 500, result.error.code);
       }
 
       res.json({
@@ -504,6 +707,155 @@ export function createVideosRoutes(deps: VideoRoutesDependencies): Router {
         501,
         'NOT_IMPLEMENTED'
       );
+    })
+  );
+
+  /**
+   * @openapi
+   * /api/videos/{videoId}:
+   *   delete:
+   *     summary: Delete a video
+   *     description: |
+   *       Deletes a video. Smart deletion logic:
+   *       - Videos without posts: permanent hard delete
+   *       - Videos with posts: soft delete (can be restored within 30 days)
+   *     tags: [Videos]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: videoId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *       - in: query
+   *         name: force
+   *         schema:
+   *           type: boolean
+   *         description: Force hard delete even for videos with posts
+   *     responses:
+   *       200:
+   *         description: Video deleted successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     videoId:
+   *                       type: string
+   *                     deleteType:
+   *                       type: string
+   *                       enum: [hard, soft]
+   *                     message:
+   *                       type: string
+   *       401:
+   *         description: Authentication required
+   *       404:
+   *         description: Video not found
+   */
+  router.delete(
+    '/:videoId',
+    deps.authMiddleware,
+    asyncHandler(async (req: Request, res: Response) => {
+      if (!req.user) {
+        throw createError('Authentication required', 401, 'UNAUTHORIZED');
+      }
+
+      const forceHardDelete = req.query.force === 'true';
+
+      const result = await deleteVideoUseCase.execute({
+        videoId: req.params.videoId,
+        userId: req.user.userId,
+        forceHardDelete,
+      });
+
+      if (!result.success) {
+        const statusCode = result.error.code === 'NOT_FOUND' ? 404 : 400;
+        throw createError(result.error.message, statusCode, result.error.code);
+      }
+
+      res.json({
+        success: true,
+        data: result.data,
+      });
+    })
+  );
+
+  /**
+   * @openapi
+   * /api/videos/{videoId}/restore:
+   *   post:
+   *     summary: Restore a deleted video
+   *     description: Restores a soft-deleted video. May re-queue for processing if needed.
+   *     tags: [Videos]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: videoId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     responses:
+   *       200:
+   *         description: Video restored successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     videoId:
+   *                       type: string
+   *                     status:
+   *                       type: string
+   *                     message:
+   *                       type: string
+   *                     requeued:
+   *                       type: boolean
+   *       401:
+   *         description: Authentication required
+   *       404:
+   *         description: Video not found
+   */
+  router.post(
+    '/:videoId/restore',
+    deps.authMiddleware,
+    asyncHandler(async (req: Request, res: Response) => {
+      if (!req.user) {
+        throw createError('Authentication required', 401, 'UNAUTHORIZED');
+      }
+
+      const result = await restoreVideoUseCase.execute({
+        videoId: req.params.videoId,
+        userId: req.user.userId,
+      });
+
+      if (!result.success) {
+        const statusCode =
+          result.error.code === 'NOT_FOUND'
+            ? 404
+            : result.error.code === 'VALIDATION_ERROR'
+            ? 400
+            : 500;
+        throw createError(result.error.message, statusCode, result.error.code);
+      }
+
+      res.json({
+        success: true,
+        data: result.data,
+      });
     })
   );
 

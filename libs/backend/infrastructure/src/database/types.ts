@@ -120,6 +120,7 @@ export interface VideosTable {
   processing_completed_at: Date | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+  deleted_at: DeletedAt;
 }
 
 /**

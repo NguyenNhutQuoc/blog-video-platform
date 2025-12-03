@@ -26,6 +26,17 @@ export class PostgresVideoRepository implements IVideoRepository {
       .selectFrom('videos')
       .selectAll()
       .where('id', '=', id)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+
+    return row ? toDomainVideo(row) : null;
+  }
+
+  async findByIdIncludeDeleted(id: string): Promise<VideoEntity | null> {
+    const row = await this.db
+      .selectFrom('videos')
+      .selectAll()
+      .where('id', '=', id)
       .executeTakeFirst();
 
     return row ? toDomainVideo(row) : null;
@@ -36,6 +47,7 @@ export class PostgresVideoRepository implements IVideoRepository {
       .selectFrom('videos')
       .selectAll()
       .where('original_filename', '=', filename)
+      .where('deleted_at', 'is', null)
       .executeTakeFirst();
 
     return row ? toDomainVideo(row) : null;
@@ -51,7 +63,8 @@ export class PostgresVideoRepository implements IVideoRepository {
       .selectFrom('videos')
       .innerJoin('posts', 'videos.post_id', 'posts.id')
       .selectAll('videos')
-      .where('posts.author_id', '=', uploaderId);
+      .where('posts.author_id', '=', uploaderId)
+      .where('videos.deleted_at', 'is', null);
 
     if (options?.status) {
       const statuses = Array.isArray(options.status)
@@ -89,7 +102,8 @@ export class PostgresVideoRepository implements IVideoRepository {
     let query = this.db
       .selectFrom('videos')
       .selectAll()
-      .where('status', '=', status);
+      .where('status', '=', status)
+      .where('deleted_at', 'is', null);
 
     const orderDir = options?.orderDir ?? 'desc';
     query = query.orderBy('created_at', orderDir);
@@ -111,6 +125,7 @@ export class PostgresVideoRepository implements IVideoRepository {
       .selectAll()
       .where('status', 'in', ['uploading', 'processing'])
       .where('retry_count', '<', 3)
+      .where('deleted_at', 'is', null)
       .orderBy('created_at', 'asc')
       .limit(limit)
       .execute();
@@ -124,6 +139,7 @@ export class PostgresVideoRepository implements IVideoRepository {
       .selectAll()
       .where('status', '=', 'failed')
       .where('retry_count', '<', maxRetries)
+      .where('deleted_at', 'is', null)
       .orderBy('created_at', 'asc')
       .execute();
 
@@ -236,9 +252,94 @@ export class PostgresVideoRepository implements IVideoRepository {
       .innerJoin('posts', 'videos.post_id', 'posts.id')
       .select(this.db.fn.sum<number>('videos.file_size').as('total'))
       .where('posts.author_id', '=', userId)
+      .where('videos.deleted_at', 'is', null)
       .executeTakeFirst();
 
     return result?.total ?? 0;
+  }
+
+  // =====================================================
+  // SOFT DELETE METHODS
+  // =====================================================
+
+  async softDelete(id: string): Promise<void> {
+    await this.db
+      .updateTable('videos')
+      .set({ deleted_at: new Date() })
+      .where('id', '=', id)
+      .execute();
+  }
+
+  async restore(id: string): Promise<void> {
+    await this.db
+      .updateTable('videos')
+      .set({ deleted_at: null })
+      .where('id', '=', id)
+      .execute();
+  }
+
+  async hardDelete(id: string): Promise<void> {
+    await this.db.deleteFrom('videos').where('id', '=', id).execute();
+  }
+
+  async hasAssociatedPost(id: string): Promise<boolean> {
+    const result = await this.db
+      .selectFrom('posts')
+      .select('id')
+      .where('video_id', '=', id)
+      .executeTakeFirst();
+
+    return !!result;
+  }
+
+  async findOrphanVideos(olderThanHours: number): Promise<VideoEntity[]> {
+    const cutoffDate = new Date(Date.now() - olderThanHours * 60 * 60 * 1000);
+
+    const rows = await this.db
+      .selectFrom('videos')
+      .selectAll()
+      .where('deleted_at', 'is', null)
+      .where('created_at', '<', cutoffDate)
+      .where((eb) =>
+        eb.not(
+          eb.exists(
+            eb
+              .selectFrom('posts')
+              .select('posts.id')
+              .whereRef('posts.video_id', '=', 'videos.id')
+          )
+        )
+      )
+      .execute();
+
+    return rows.map(toDomainVideo);
+  }
+
+  async findDeletedByUserId(userId: string): Promise<VideoEntity[]> {
+    // Find deleted videos that belong to user's posts
+    const rows = await this.db
+      .selectFrom('videos')
+      .innerJoin('posts', 'videos.post_id', 'posts.id')
+      .selectAll('videos')
+      .where('posts.author_id', '=', userId)
+      .where('videos.deleted_at', 'is not', null)
+      .orderBy('videos.deleted_at', 'desc')
+      .execute();
+
+    return rows.map(toDomainVideo);
+  }
+
+  async findDeletedOlderThan(days: number): Promise<VideoEntity[]> {
+    const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const rows = await this.db
+      .selectFrom('videos')
+      .selectAll()
+      .where('deleted_at', 'is not', null)
+      .where('deleted_at', '<', cutoffDate)
+      .execute();
+
+    return rows.map(toDomainVideo);
   }
 }
 

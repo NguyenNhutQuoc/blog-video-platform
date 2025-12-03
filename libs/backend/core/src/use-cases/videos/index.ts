@@ -22,3 +22,31 @@ export {
   type GetVideoStatusOutput,
   type GetVideoStatusDependencies,
 } from './get-video-status.use-case.js';
+
+export {
+  DeleteVideoUseCase,
+  type DeleteVideoInput,
+  type DeleteVideoOutput,
+  type DeleteVideoDependencies,
+} from './delete-video.use-case.js';
+
+export {
+  RestoreVideoUseCase,
+  type RestoreVideoInput,
+  type RestoreVideoOutput,
+  type RestoreVideoDependencies,
+} from './restore-video.use-case.js';
+
+export {
+  CleanupOrphanVideosUseCase,
+  type CleanupOrphanVideosInput,
+  type CleanupOrphanVideosOutput,
+  type CleanupOrphanVideosUseCaseDeps,
+} from './cleanup-orphan-videos.use-case.js';
+
+export {
+  CleanupTrashVideosUseCase,
+  type CleanupTrashVideosInput,
+  type CleanupTrashVideosOutput,
+  type CleanupTrashVideosUseCaseDeps,
+} from './cleanup-trash-videos.use-case.js';

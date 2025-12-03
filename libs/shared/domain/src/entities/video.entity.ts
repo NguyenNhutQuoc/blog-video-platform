@@ -106,6 +106,7 @@ export const VideoSchema = z.object({
   uploadedAt: z.date().nullable().default(null),
   processingCompletedAt: z.date().nullable().default(null),
   createdAt: z.date(),
+  deletedAt: z.date().nullable().default(null),
 });
 
 // =====================================================

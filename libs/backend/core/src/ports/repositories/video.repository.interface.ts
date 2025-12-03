@@ -81,6 +81,46 @@ export interface IVideoRepository {
    * Get total storage used by user
    */
   getTotalStorageByUser(userId: string): Promise<number>;
+
+  /**
+   * Soft delete video (set deleted_at)
+   */
+  softDelete(id: string): Promise<void>;
+
+  /**
+   * Restore soft deleted video (set deleted_at = null)
+   */
+  restore(id: string): Promise<void>;
+
+  /**
+   * Hard delete video (permanent removal from DB)
+   */
+  hardDelete(id: string): Promise<void>;
+
+  /**
+   * Check if video has associated post
+   */
+  hasAssociatedPost(id: string): Promise<boolean>;
+
+  /**
+   * Find orphan videos (no post, older than specified hours)
+   */
+  findOrphanVideos(olderThanHours: number): Promise<VideoEntity[]>;
+
+  /**
+   * Find soft deleted videos by user
+   */
+  findDeletedByUserId(userId: string): Promise<VideoEntity[]>;
+
+  /**
+   * Find soft deleted videos older than specified days (for cleanup)
+   */
+  findDeletedOlderThan(days: number): Promise<VideoEntity[]>;
+
+  /**
+   * Find video by ID including soft deleted
+   */
+  findByIdIncludeDeleted(id: string): Promise<VideoEntity | null>;
 }
 
 /**

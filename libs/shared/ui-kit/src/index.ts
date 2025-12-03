@@ -18,3 +18,4 @@ export * from './components/VideoUpload';
 export * from './components/VideoStatus';
 export * from './components/VideoUploadSuccess';
 export * from './components/VideoPlayer';
+export * from './components/VideoDeletedPlaceholder';

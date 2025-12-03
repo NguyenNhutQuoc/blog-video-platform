@@ -136,6 +136,7 @@ export class GenerateUploadUrlUseCase {
       uploadedAt: null,
       processingCompletedAt: null,
       createdAt: new Date(),
+      deletedAt: null,
     });
 
     await this.deps.videoRepository.save(video);

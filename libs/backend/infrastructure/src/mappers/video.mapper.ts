@@ -29,6 +29,7 @@ interface CamelCaseVideoRow {
   uploadedAt: Date | null;
   processingCompletedAt: Date | null;
   createdAt: Date;
+  deletedAt: Date | null;
 }
 
 /**
@@ -46,8 +47,10 @@ export function toDomainVideo(row: VideoRow): VideoEntity {
     mimeType: camelRow.mimeType,
     status: camelRow.status as
       | 'uploading'
+      | 'uploaded'
       | 'processing'
       | 'ready'
+      | 'partial_ready'
       | 'failed'
       | 'cancelled',
     duration: camelRow.duration ?? null,
@@ -69,6 +72,7 @@ export function toDomainVideo(row: VideoRow): VideoEntity {
     uploadedAt: camelRow.uploadedAt ?? null,
     processingCompletedAt: camelRow.processingCompletedAt ?? null,
     createdAt: camelRow.createdAt,
+    deletedAt: camelRow.deletedAt ?? null,
   };
 
   return new VideoEntity(video);

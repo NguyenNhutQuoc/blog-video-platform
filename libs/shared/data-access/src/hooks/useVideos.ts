@@ -44,12 +44,37 @@ export interface GenerateUploadUrlRequest {
   postId?: string;
 }
 
+export interface DeletedVideo {
+  id: string;
+  originalFilename: string;
+  status: string;
+  thumbnailUrl?: string;
+  duration?: number;
+  fileSize?: number;
+  createdAt: string;
+  deletedAt: string;
+}
+
+export interface DeleteVideoResponse {
+  videoId: string;
+  deleteType: 'hard' | 'soft';
+  message: string;
+}
+
+export interface RestoreVideoResponse {
+  videoId: string;
+  status: string;
+  message: string;
+  requeued: boolean;
+}
+
 // Query keys
 export const videoKeys = {
   all: ['videos'] as const,
   details: () => [...videoKeys.all, 'detail'] as const,
   detail: (id: string) => [...videoKeys.details(), id] as const,
   status: (id: string) => [...videoKeys.all, 'status', id] as const,
+  deleted: () => [...videoKeys.all, 'deleted'] as const,
 };
 
 /**
@@ -120,6 +145,73 @@ export const useVideoStatus = (
     },
     retry: 3,
     retryDelay: 1000,
+  });
+};
+
+/**
+ * Hook to delete a video
+ * Uses smart deletion: hard delete if no post, soft delete if has post
+ */
+export const useDeleteVideo = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      videoId,
+      force = false,
+    }: {
+      videoId: string;
+      force?: boolean;
+    }): Promise<DeleteVideoResponse> => {
+      const response = await apiClient.delete<{
+        success: boolean;
+        data: DeleteVideoResponse;
+      }>(`/videos/${videoId}${force ? '?force=true' : ''}`);
+      return response.data.data;
+    },
+    onSuccess: (_, { videoId }) => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: videoKeys.status(videoId) });
+      queryClient.invalidateQueries({ queryKey: videoKeys.deleted() });
+    },
+  });
+};
+
+/**
+ * Hook to restore a soft-deleted video
+ */
+export const useRestoreVideo = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (videoId: string): Promise<RestoreVideoResponse> => {
+      const response = await apiClient.post<{
+        success: boolean;
+        data: RestoreVideoResponse;
+      }>(`/videos/${videoId}/restore`);
+      return response.data.data;
+    },
+    onSuccess: (_, videoId) => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: videoKeys.status(videoId) });
+      queryClient.invalidateQueries({ queryKey: videoKeys.deleted() });
+    },
+  });
+};
+
+/**
+ * Hook to get list of deleted videos for the current user
+ */
+export const useDeletedVideos = () => {
+  return useQuery({
+    queryKey: videoKeys.deleted(),
+    queryFn: async (): Promise<DeletedVideo[]> => {
+      const response = await apiClient.get<{
+        success: boolean;
+        data: { videos: DeletedVideo[] };
+      }>('/videos/deleted');
+      return response.data.data.videos;
+    },
   });
 };
 
