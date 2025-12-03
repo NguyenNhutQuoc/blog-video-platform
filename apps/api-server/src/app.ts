@@ -29,6 +29,7 @@ import { createFollowsRoutes } from './routes/follows.routes.js';
 import { createCategoriesRoutes } from './routes/categories.routes.js';
 import { createTagsRoutes } from './routes/tags.routes.js';
 import { createVideosRoutes } from './routes/videos.routes.js';
+import { createCommentsRoutes } from './routes/comments.routes.js';
 import type {
   IUserRepository,
   IPostRepository,
@@ -36,6 +37,9 @@ import type {
   ICategoryRepository,
   ITagRepository,
   IFollowRepository,
+  ILikeRepository,
+  ICommentRepository,
+  ICommentLikeRepository,
   IVideoRepository,
   IVideoQualityRepository,
   ITokenGenerator,
@@ -55,6 +59,9 @@ export interface AppDependencies {
   categoryRepository: ICategoryRepository;
   tagRepository: ITagRepository;
   followRepository: IFollowRepository;
+  likeRepository: ILikeRepository;
+  commentRepository: ICommentRepository;
+  commentLikeRepository: ICommentLikeRepository;
   videoRepository: IVideoRepository;
   videoQualityRepository?: IVideoQualityRepository;
   tokenGenerator: ITokenGenerator;
@@ -206,8 +213,23 @@ export function createApp(deps: AppDependencies): Express {
     userRepository: deps.userRepository,
     categoryRepository: deps.categoryRepository,
     tagRepository: deps.tagRepository,
+    likeRepository: deps.likeRepository,
     authMiddleware,
     optionalAuthMiddleware,
+  });
+
+  const commentsRoutes = createCommentsRoutes({
+    commentRepository: deps.commentRepository,
+    commentLikeRepository: deps.commentLikeRepository,
+    postRepository: deps.postRepository,
+    userRepository: deps.userRepository,
+    authMiddleware,
+    optionalAuthMiddleware,
+    redisConfig: {
+      host: deps.env.REDIS_HOST,
+      port: deps.env.REDIS_PORT,
+      password: deps.env.REDIS_PASSWORD,
+    },
   });
 
   const usersRoutes = createUsersRoutes({
@@ -271,6 +293,8 @@ export function createApp(deps: AppDependencies): Express {
 
   app.use('/api/auth', authRoutes);
   app.use('/api/posts', postsRoutes);
+  // Comments routes mounted under /api for /posts/:postId/comments and /comments/:id
+  app.use('/api', commentsRoutes);
   app.use('/api/users', usersRoutes);
   // Mount follows routes under /api/users for follow/unfollow endpoints
   app.use('/api/users', followsRoutes);

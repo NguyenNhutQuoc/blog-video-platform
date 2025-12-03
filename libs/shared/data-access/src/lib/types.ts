@@ -79,6 +79,7 @@ export interface PostData {
   likeCount: number;
   commentCount: number;
   bookmarkCount: number;
+  isLiked?: boolean;
   publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -122,6 +123,7 @@ export interface Post {
   likeCount: number;
   commentCount: number;
   bookmarkCount: number;
+  isLiked?: boolean;
   publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -162,15 +164,23 @@ export interface UpdatePostRequest {
 }
 
 // Comment types
+export interface CommentAuthor {
+  id: string;
+  username: string;
+  fullName: string | null;
+  avatarUrl: string | null;
+}
+
 export interface Comment {
   id: string;
   content: string;
-  author: User;
+  author: CommentAuthor;
   postId: string;
-  parentId?: string;
+  parentId?: string | null;
   likeCount: number;
-  status: 'approved' | 'pending' | 'spam';
-  isFlagged: boolean;
+  replyCount: number;
+  isLiked?: boolean;
+  status: 'active' | 'deleted';
   createdAt: string;
   updatedAt: string;
 }

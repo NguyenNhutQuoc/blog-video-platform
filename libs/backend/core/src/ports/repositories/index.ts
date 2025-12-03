@@ -60,3 +60,11 @@ export type {
   CreateLoginAttemptInput,
   LoginAttemptStats,
 } from './login-attempt.repository.interface.js';
+export type {
+  ILikeRepository,
+  LikeQueryOptions,
+} from './like.repository.interface.js';
+export type {
+  ICommentLikeRepository,
+  CommentLikeQueryOptions,
+} from './comment-like.repository.interface.js';

@@ -46,6 +46,7 @@ export const CommentSchema = z.object({
   parentId: z.string().uuid().nullable().default(null), // For 1-level reply
   content: CommentContentSchema,
   isFlagged: z.boolean().default(false),
+  likeCount: z.number().int().min(0).default(0),
   status: CommentStatusSchema.default(CommentStatus.APPROVED),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -124,6 +125,20 @@ export class CommentEntity {
 
   constructor(private readonly props: Comment) {}
 
+  /**
+   * Create entity from persistence data
+   */
+  static fromPersistence(data: Comment): CommentEntity {
+    return new CommentEntity(data);
+  }
+
+  /**
+   * Convert entity to plain object for serialization
+   */
+  toJSON(): Comment {
+    return { ...this.props };
+  }
+
   // Getters
   get id(): string {
     return this.props.id;
@@ -151,6 +166,26 @@ export class CommentEntity {
 
   get isFlagged(): boolean {
     return this.props.isFlagged;
+  }
+
+  get likeCount(): number {
+    return this.props.likeCount ?? 0;
+  }
+
+  get createdAt(): Date {
+    return this.props.createdAt;
+  }
+
+  get updatedAt(): Date {
+    return this.props.updatedAt;
+  }
+
+  get deletedAt(): Date | null {
+    return this.props.deletedAt;
+  }
+
+  get deletedBy(): string | null {
+    return this.props.deletedBy;
   }
 
   // Business Rules

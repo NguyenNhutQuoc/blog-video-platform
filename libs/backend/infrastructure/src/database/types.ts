@@ -174,6 +174,7 @@ export interface CommentsTable {
   parent_id: string | null;
   content: string;
   is_flagged: ColumnType<boolean, boolean | undefined, boolean>;
+  like_count: ColumnType<number, number | undefined, number>;
   status: ColumnType<string, string | undefined, string>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -188,6 +189,15 @@ export interface LikesTable {
   id: UUID;
   user_id: string;
   post_id: string;
+  created_at: CreatedAt;
+}
+
+/**
+ * Comment Likes table
+ */
+export interface CommentLikesTable {
+  user_id: string;
+  comment_id: string;
   created_at: CreatedAt;
 }
 
@@ -313,6 +323,7 @@ export interface Database {
   post_tags: PostTagsTable;
   comments: CommentsTable;
   likes: LikesTable;
+  comment_likes: CommentLikesTable;
   bookmark_folders: BookmarkFoldersTable;
   bookmarks: BookmarksTable;
   sessions: SessionsTable;
@@ -360,6 +371,10 @@ export type CommentUpdate = Updateable<CommentsTable>;
 // Likes
 export type LikeRow = Selectable<LikesTable>;
 export type NewLike = Insertable<LikesTable>;
+
+// Comment Likes
+export type CommentLikeRow = Selectable<CommentLikesTable>;
+export type NewCommentLike = Insertable<CommentLikesTable>;
 
 // Bookmark Folders
 export type BookmarkFolderRow = Selectable<BookmarkFoldersTable>;

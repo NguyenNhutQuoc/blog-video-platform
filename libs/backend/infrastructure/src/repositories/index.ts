@@ -13,3 +13,6 @@ export * from './follow.repository.js';
 export * from './email-verification-token.repository.js';
 export * from './password-reset-token.repository.js';
 export * from './login-attempt.repository.js';
+export * from './like.repository.js';
+export * from './comment.repository.js';
+export * from './comment-like.repository.js';

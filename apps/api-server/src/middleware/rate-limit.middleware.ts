@@ -2,10 +2,12 @@
  * Rate Limiting Middleware
  *
  * Provides stricter rate limiting for auth endpoints to prevent brute force attacks.
+ * Also provides Redis-based rate limiting for comments (50 per day per user).
  */
 
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import { Redis } from 'ioredis';
 
 /**
  * Normalize IP addresses (including IPv6) using the helper provided by express-rate-limit
@@ -160,4 +162,157 @@ export function createResendVerificationRateLimiter(
       });
     },
   });
+}
+
+// ============================================================================
+// Redis-based Comment Rate Limiter (50 comments per day per user)
+// ============================================================================
+
+export interface CommentRateLimitConfig {
+  /** Redis connection options */
+  redis: {
+    host: string;
+    port: number;
+    password?: string;
+  };
+  /** Max comments per day (default: 50) */
+  maxCommentsPerDay?: number;
+}
+
+// Use type instead of interface to avoid extending Request
+type CommentRateLimitRequest = Request & {
+  incrementCommentCount?: () => Promise<void>;
+};
+
+let redisClient: Redis | null = null;
+
+/**
+ * Creates a Redis-based rate limiter for comments
+ * Limits: 50 comments per day per authenticated user
+ *
+ * Uses Redis INCR with daily key expiry for efficient tracking.
+ * Key format: comment-rate:{userId}:{YYYY-MM-DD}
+ */
+export function createCommentRateLimiter(config: CommentRateLimitConfig) {
+  const maxCommentsPerDay = config.maxCommentsPerDay ?? 50;
+
+  // Lazy initialize Redis client
+  const getRedis = (): Redis => {
+    if (!redisClient) {
+      redisClient = new Redis({
+        host: config.redis.host,
+        port: config.redis.port,
+        password: config.redis.password,
+        maxRetriesPerRequest: 3,
+        lazyConnect: true,
+      });
+
+      redisClient.on('error', (err) => {
+        console.error('Comment rate limiter Redis error:', err);
+      });
+    }
+    return redisClient;
+  };
+
+  return async (
+    req: CommentRateLimitRequest,
+    res: Response,
+    next: NextFunction
+  ) => {
+    // Access user from req.user which is set by auth middleware
+    const userId = (req as Request & { user?: { userId: string } }).user
+      ?.userId;
+
+    // Skip rate limiting for unauthenticated requests (auth middleware will handle)
+    if (!userId) {
+      return next();
+    }
+
+    // Get today's date in UTC for consistent key
+    const today = new Date().toISOString().split('T')[0];
+    const key = `comment-rate:${userId}:${today}`;
+
+    try {
+      const redis = getRedis();
+
+      // Get current count
+      const currentCount = await redis.get(key);
+      const count = currentCount ? parseInt(currentCount, 10) : 0;
+
+      if (count >= maxCommentsPerDay) {
+        // Calculate seconds until midnight UTC
+        const now = new Date();
+        const midnight = new Date(now);
+        midnight.setUTCHours(24, 0, 0, 0);
+        const secondsUntilMidnight = Math.ceil(
+          (midnight.getTime() - now.getTime()) / 1000
+        );
+
+        return res.status(429).json({
+          success: false,
+          error: {
+            code: 'COMMENT_RATE_LIMIT_EXCEEDED',
+            message: `You have reached the daily limit of ${maxCommentsPerDay} comments. Please try again tomorrow.`,
+            retryAfter: secondsUntilMidnight,
+            remaining: 0,
+            limit: maxCommentsPerDay,
+          },
+        });
+      }
+
+      // Increment count - will be committed after successful comment creation
+      // Store the increment function on the request for the route to call
+      (req as CommentRateLimitRequest).incrementCommentCount = async () => {
+        const multi = redis.multi();
+        multi.incr(key);
+        // Set expiry to 25 hours to ensure key persists through the day
+        multi.expire(key, 25 * 60 * 60);
+        await multi.exec();
+      };
+
+      // Add rate limit headers
+      res.setHeader('X-RateLimit-Limit', maxCommentsPerDay.toString());
+      res.setHeader(
+        'X-RateLimit-Remaining',
+        (maxCommentsPerDay - count).toString()
+      );
+
+      next();
+    } catch (error) {
+      console.error('Comment rate limiter error:', error);
+      // Fail open - allow the request if Redis is unavailable
+      next();
+    }
+  };
+}
+
+/**
+ * Get current comment count for a user (useful for displaying in UI)
+ */
+export async function getCommentCount(
+  redis: Redis,
+  userId: string
+): Promise<{ count: number; limit: number; remaining: number }> {
+  const today = new Date().toISOString().split('T')[0];
+  const key = `comment-rate:${userId}:${today}`;
+
+  const currentCount = await redis.get(key);
+  const count = currentCount ? parseInt(currentCount, 10) : 0;
+  const limit = 50;
+
+  return {
+    count,
+    limit,
+    remaining: Math.max(0, limit - count),
+  };
+}
+
+/**
+ * Cleanup Redis connection on shutdown
+ */
+export async function closeCommentRateLimiter(): Promise<void> {
+  if (redisClient) {
+    await redisClient.quit();
+    redisClient = null;
+  }
 }

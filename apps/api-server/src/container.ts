@@ -14,6 +14,9 @@ import type {
   ICategoryRepository,
   ITagRepository,
   IFollowRepository,
+  ILikeRepository,
+  ICommentRepository,
+  ICommentLikeRepository,
   IVideoRepository,
   IVideoQualityRepository,
   IEmailVerificationTokenRepository,
@@ -32,6 +35,9 @@ import {
   PostgresCategoryRepository,
   PostgresTagRepository,
   PostgresFollowRepository,
+  PostgresLikeRepository,
+  PostgresCommentRepository,
+  PostgresCommentLikeRepository,
   PostgresVideoRepository,
   VideoQualityRepository,
   EmailVerificationTokenRepository,
@@ -53,6 +59,9 @@ export interface AppContainer {
   categoryRepository: ICategoryRepository;
   tagRepository: ITagRepository;
   followRepository: IFollowRepository;
+  likeRepository: ILikeRepository;
+  commentRepository: ICommentRepository;
+  commentLikeRepository: ICommentLikeRepository;
   videoRepository: IVideoRepository;
   videoQualityRepository: IVideoQualityRepository;
   emailVerificationTokenRepository: IEmailVerificationTokenRepository;
@@ -105,6 +114,9 @@ export function createContainer(deps: ContainerDependencies): AppContainer {
   const categoryRepository = new PostgresCategoryRepository(deps.db);
   const tagRepository = new PostgresTagRepository(deps.db);
   const followRepository = new PostgresFollowRepository(deps.db);
+  const likeRepository = new PostgresLikeRepository(deps.db);
+  const commentRepository = new PostgresCommentRepository(deps.db);
+  const commentLikeRepository = new PostgresCommentLikeRepository(deps.db);
   const videoRepository = new PostgresVideoRepository(deps.db);
   const videoQualityRepository = new VideoQualityRepository(deps.pool);
   const emailVerificationTokenRepository = new EmailVerificationTokenRepository(
@@ -123,6 +135,9 @@ export function createContainer(deps: ContainerDependencies): AppContainer {
     categoryRepository,
     tagRepository,
     followRepository,
+    likeRepository,
+    commentRepository,
+    commentLikeRepository,
     videoRepository,
     videoQualityRepository,
     emailVerificationTokenRepository,

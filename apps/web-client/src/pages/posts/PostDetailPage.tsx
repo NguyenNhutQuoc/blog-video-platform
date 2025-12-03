@@ -16,6 +16,7 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Collapse,
 } from '@mui/material';
 import {
   FavoriteBorder,
@@ -23,6 +24,8 @@ import {
   BookmarkBorder,
   Bookmark,
   MoreVert,
+  ExpandMore,
+  ExpandLess,
 } from '@mui/icons-material';
 import {
   NavigationBar,
@@ -34,34 +37,256 @@ import { useAuth } from '../../providers/AuthProvider';
 import {
   usePost,
   usePostComments,
+  useCommentReplies,
   useCreateComment,
+  useDeleteComment,
   useLikePost,
   useUnlikePost,
+  useLikeComment,
+  useUnlikeComment,
   Comment,
   CursorPaginatedResponse,
 } from '@blog/shared-data-access';
 import { formatDate } from '@blog/shared-utils';
 
 const commentSchema = z.object({
-  content: z.string().min(1, 'Comment cannot be empty'),
+  content: z
+    .string()
+    .min(1, 'Comment cannot be empty')
+    .max(500, 'Comment must be under 500 characters'),
 });
 
 type CommentFormData = z.infer<typeof commentSchema>;
+
+// Component to display a comment with its replies
+interface CommentWithRepliesProps {
+  comment: Comment;
+  postId: string;
+  currentUserId?: string;
+  onReplyClick: (commentId: string) => void;
+  replyingTo: string | null;
+  onCancelReply: () => void;
+  onLikeComment: (commentId: string, isLiked: boolean) => void;
+}
+
+function CommentWithReplies({
+  comment,
+  postId,
+  currentUserId,
+  onReplyClick,
+  replyingTo,
+  onCancelReply,
+  onLikeComment,
+}: CommentWithRepliesProps) {
+  const [showReplies, setShowReplies] = useState(false);
+  const {
+    data: repliesData,
+    fetchNextPage,
+    hasNextPage,
+  } = useCommentReplies(postId, showReplies ? comment.id : '');
+  const createCommentMutation = useCreateComment();
+  const deleteCommentMutation = useDeleteComment();
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CommentFormData>({
+    resolver: zodResolver(commentSchema),
+    defaultValues: { content: '' },
+  });
+
+  console.log('Replies data for comment', comment);
+
+  const onSubmitReply = async (data: CommentFormData) => {
+    try {
+      await createCommentMutation.mutateAsync({
+        postId,
+        content: data.content,
+        parentId: comment.id,
+      });
+      reset();
+      onCancelReply();
+      setShowReplies(true);
+    } catch (error) {
+      console.error('Create reply failed:', error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this comment?')) {
+      try {
+        await deleteCommentMutation.mutateAsync({
+          commentId: comment.id,
+          postId,
+        });
+      } catch (error) {
+        console.error('Delete comment failed:', error);
+      }
+    }
+  };
+
+  const replies = repliesData?.pages.flatMap((page) => page.data) ?? [];
+  const isShowingReplyForm = replyingTo === comment.id;
+  const canDelete = currentUserId === comment.author.id;
+
+  return (
+    <Box>
+      <CommentCard
+        id={comment.id}
+        content={comment.content}
+        author={{
+          username: comment.author.username,
+          fullName: comment.author.fullName || comment.author.username,
+          avatarUrl: comment.author.avatarUrl || undefined,
+        }}
+        createdAt={comment.createdAt}
+        likeCount={comment.likeCount}
+        isLiked={comment.isLiked}
+        onLike={() => onLikeComment(comment.id, comment.isLiked ?? false)}
+        onReply={() => onReplyClick(comment.id)}
+      />
+
+      {/* Reply Form */}
+      <Collapse in={isShowingReplyForm}>
+        <Box sx={{ ml: 6, mt: 1, mb: 2 }}>
+          <form onSubmit={handleSubmit(onSubmitReply)}>
+            <Controller
+              name="content"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  size="small"
+                  multiline
+                  rows={2}
+                  placeholder={`Reply to @${comment.author.username}...`}
+                  error={!!errors.content}
+                  helperText={errors.content?.message}
+                  sx={{ mb: 1 }}
+                />
+              )}
+            />
+            <Stack direction="row" spacing={1}>
+              <Button
+                type="submit"
+                variant="contained"
+                size="small"
+                disabled={createCommentMutation.isPending}
+              >
+                {createCommentMutation.isPending ? 'Posting...' : 'Reply'}
+              </Button>
+              <Button size="small" onClick={onCancelReply}>
+                Cancel
+              </Button>
+            </Stack>
+          </form>
+        </Box>
+      </Collapse>
+
+      {/* Show/Hide Replies Toggle */}
+      {comment.replyCount > 0 && (
+        <Box sx={{ ml: 6 }}>
+          <Button
+            size="small"
+            startIcon={showReplies ? <ExpandLess /> : <ExpandMore />}
+            onClick={() => setShowReplies(!showReplies)}
+            sx={{ textTransform: 'none' }}
+          >
+            {showReplies ? 'Hide' : 'View'} {comment.replyCount}{' '}
+            {comment.replyCount === 1 ? 'reply' : 'replies'}
+          </Button>
+        </Box>
+      )}
+
+      {/* Replies List */}
+      <Collapse in={showReplies}>
+        <Box
+          sx={{ ml: 6, borderLeft: '2px solid', borderColor: 'divider', pl: 2 }}
+        >
+          {replies.map((reply) => (
+            <Box key={reply.id} sx={{ py: 1 }}>
+              <CommentCard
+                id={reply.id}
+                content={reply.content}
+                author={{
+                  username: reply.author.username,
+                  fullName: reply.author.fullName || reply.author.username,
+                  avatarUrl: reply.author.avatarUrl || undefined,
+                }}
+                createdAt={reply.createdAt}
+                likeCount={reply.likeCount}
+                isLiked={reply.isLiked}
+                onLike={() => onLikeComment(reply.id, reply.isLiked ?? false)}
+              />
+              {currentUserId === reply.author.id && (
+                <Button
+                  size="small"
+                  color="error"
+                  sx={{ ml: 6, mt: -1 }}
+                  onClick={() => {
+                    if (window.confirm('Delete this reply?')) {
+                      deleteCommentMutation.mutate({
+                        commentId: reply.id,
+                        postId,
+                      });
+                    }
+                  }}
+                >
+                  Delete
+                </Button>
+              )}
+            </Box>
+          ))}
+          {hasNextPage && (
+            <Button size="small" onClick={() => fetchNextPage()}>
+              Load more replies
+            </Button>
+          )}
+        </Box>
+      </Collapse>
+
+      {/* Delete button for comment owner */}
+      {canDelete && (
+        <Box sx={{ ml: 6 }}>
+          <Button
+            size="small"
+            color="error"
+            onClick={handleDelete}
+            disabled={deleteCommentMutation.isPending}
+          >
+            Delete
+          </Button>
+        </Box>
+      )}
+    </Box>
+  );
+}
 
 export default function PostDetailPage() {
   const params = useParams();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const postId = params.id as string;
 
   const { data: post, isLoading: postLoading } = usePost(postId);
   console.log('Post data:', post);
-  const { data: commentsData } = usePostComments(postId);
+  const {
+    data: commentsData,
+    fetchNextPage,
+    hasNextPage,
+  } = usePostComments(postId);
   const createCommentMutation = useCreateComment();
   const likePostMutation = useLikePost();
   const unlikePostMutation = useUnlikePost();
+  const likeCommentMutation = useLikeComment();
+  const unlikeCommentMutation = useUnlikeComment();
 
+  console.log('Comments data:', commentsData);
   const {
     control,
     handleSubmit,
@@ -74,7 +299,8 @@ export default function PostDetailPage() {
     },
   });
 
-  const isLiked = false; // TODO: Implement liked state from API
+  // Use isLiked from post data (from API)
+  const isLiked = post?.isLiked ?? false;
   const isBookmarked = false; // TODO: Implement bookmarked state from API
 
   const handleLike = async () => {
@@ -89,6 +315,25 @@ export default function PostDetailPage() {
     }
   };
 
+  const handleLikeComment = async (
+    commentId: string,
+    isCommentLiked: boolean
+  ) => {
+    if (!user) {
+      navigate('/auth/login');
+      return;
+    }
+    try {
+      if (isCommentLiked) {
+        await unlikeCommentMutation.mutateAsync({ commentId, postId });
+      } else {
+        await likeCommentMutation.mutateAsync({ commentId, postId });
+      }
+    } catch (error) {
+      console.error('Comment like action failed:', error);
+    }
+  };
+
   const onSubmitComment = async (data: CommentFormData) => {
     try {
       await createCommentMutation.mutateAsync({
@@ -99,6 +344,14 @@ export default function PostDetailPage() {
     } catch (error) {
       console.error('Create comment failed:', error);
     }
+  };
+
+  const handleReplyClick = (commentId: string) => {
+    if (!user) {
+      navigate('/auth/login');
+      return;
+    }
+    setReplyingTo(replyingTo === commentId ? null : commentId);
   };
 
   const handleLogout = async () => {
@@ -193,9 +446,7 @@ export default function PostDetailPage() {
               <MenuItem onClick={() => setAnchorEl(null)}>Report</MenuItem>
               {user?.id === post.author?.id && (
                 <>
-                  <MenuItem
-                    onClick={() => navigate(`/posts/${postId}/edit`)}
-                  >
+                  <MenuItem onClick={() => navigate(`/posts/${postId}/edit`)}>
                     Edit
                   </MenuItem>
                   <MenuItem onClick={() => setAnchorEl(null)}>Delete</MenuItem>
@@ -417,25 +668,26 @@ export default function PostDetailPage() {
           <Divider sx={{ my: 3 }} />
 
           {/* Comments List */}
-          <Stack spacing={3}>
+          <Stack spacing={2} divider={<Divider />}>
             {commentsData?.pages
-              .flatMap((page: CursorPaginatedResponse<Comment>) => page.data)
+              .flatMap((page: any) => {
+                console.log('Comments page data:', page);
+                return page || [];
+              })
+              .filter((comment): comment is Comment => comment != null)
               .map((comment: Comment) => (
-                <CommentCard
+                <CommentWithReplies
                   key={comment.id}
-                  id={comment.id}
-                  content={comment.content}
-                  author={{
-                    username: comment.author.username,
-                    fullName: comment.author.fullName,
-                    avatarUrl: comment.author.avatarUrl,
-                  }}
-                  createdAt={comment.createdAt}
-                  likeCount={comment.likeCount}
+                  comment={comment}
+                  postId={postId}
+                  currentUserId={user?.id}
+                  onReplyClick={handleReplyClick}
+                  replyingTo={replyingTo}
+                  onCancelReply={() => setReplyingTo(null)}
+                  onLikeComment={handleLikeComment}
                 />
               ))}
-            {(!commentsData?.pages[0]?.data ||
-              commentsData?.pages[0]?.data.length === 0) && (
+            {!commentsData?.pages[0] && (
               <Typography
                 variant="body2"
                 color="text.secondary"
@@ -446,6 +698,15 @@ export default function PostDetailPage() {
               </Typography>
             )}
           </Stack>
+
+          {/* Load More Comments */}
+          {hasNextPage && (
+            <Box textAlign="center" mt={3}>
+              <Button onClick={() => fetchNextPage()}>
+                Load more comments
+              </Button>
+            </Box>
+          )}
         </Paper>
       </Container>
     </>

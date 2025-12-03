@@ -12,6 +12,9 @@ import type {
   ICategoryRepository,
   ITagRepository,
   IFollowRepository,
+  ILikeRepository,
+  ICommentRepository,
+  ICommentLikeRepository,
   IPasswordHasher,
   ITokenGenerator,
   IEmailVerificationTokenRepository,
@@ -41,8 +44,24 @@ export interface PostRoutesDependencies {
   userRepository: IUserRepository;
   categoryRepository: ICategoryRepository;
   tagRepository: ITagRepository;
+  likeRepository: ILikeRepository;
   authMiddleware: RequestHandler;
   optionalAuthMiddleware: RequestHandler;
+}
+
+export interface CommentRoutesDependencies {
+  commentRepository: ICommentRepository;
+  commentLikeRepository: ICommentLikeRepository;
+  postRepository: IPostRepository;
+  userRepository: IUserRepository;
+  authMiddleware: RequestHandler;
+  optionalAuthMiddleware: RequestHandler;
+  /** Redis config for comment rate limiting */
+  redisConfig?: {
+    host: string;
+    port: number;
+    password?: string;
+  };
 }
 
 export interface UserRoutesDependencies {

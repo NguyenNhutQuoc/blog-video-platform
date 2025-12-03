@@ -12,6 +12,8 @@ import {
   UpdatePostUseCase,
   DeletePostUseCase,
   ListPostsUseCase,
+  LikePostUseCase,
+  UnlikePostUseCase,
 } from '@blog/backend/core';
 import { asyncHandler, createError } from '../middleware/error.middleware.js';
 import type { PostRoutesDependencies } from './types.js';
@@ -29,6 +31,7 @@ export function createPostsRoutes(deps: PostRoutesDependencies): Router {
   const getPostUseCase = new GetPostUseCase({
     postRepository: deps.postRepository,
     userRepository: deps.userRepository,
+    likeRepository: deps.likeRepository,
   });
 
   const updatePostUseCase = new UpdatePostUseCase({
@@ -44,6 +47,18 @@ export function createPostsRoutes(deps: PostRoutesDependencies): Router {
   });
 
   const listPostsUseCase = new ListPostsUseCase({
+    postRepository: deps.postRepository,
+    userRepository: deps.userRepository,
+  });
+
+  const likePostUseCase = new LikePostUseCase({
+    likeRepository: deps.likeRepository,
+    postRepository: deps.postRepository,
+    userRepository: deps.userRepository,
+  });
+
+  const unlikePostUseCase = new UnlikePostUseCase({
+    likeRepository: deps.likeRepository,
     postRepository: deps.postRepository,
     userRepository: deps.userRepository,
   });
@@ -437,6 +452,124 @@ export function createPostsRoutes(deps: PostRoutesDependencies): Router {
             : result.error.code === 'UNAUTHORIZED_TO_EDIT'
             ? 403
             : 500;
+        throw createError(result.error.message, statusCode, result.error.code);
+      }
+
+      res.json({
+        success: true,
+        data: result.data,
+      });
+    })
+  );
+
+  /**
+   * @openapi
+   * /api/posts/{id}/like:
+   *   post:
+   *     summary: Like a post
+   *     description: Adds a like to a post
+   *     tags: [Posts]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     responses:
+   *       200:
+   *         description: Post liked successfully
+   *       400:
+   *         description: Already liked
+   *       401:
+   *         description: Authentication required
+   *       404:
+   *         description: Post not found
+   */
+  router.post(
+    '/:id/like',
+    deps.authMiddleware,
+    asyncHandler(async (req: Request, res: Response) => {
+      if (!req.user) {
+        throw createError('Authentication required', 401, 'UNAUTHORIZED');
+      }
+
+      const result = await likePostUseCase.execute({
+        userId: req.user.userId,
+        postId: req.params.id,
+      });
+
+      if (!result.success) {
+        const statusCode =
+          result.error.code === 'POST_NOT_FOUND'
+            ? 404
+            : result.error.code === 'VALIDATION_ERROR'
+            ? 400
+            : result.error.code === 'USER_NOT_FOUND'
+            ? 404
+            : result.error.code === 'USER_INACTIVE'
+            ? 403
+            : 400;
+        throw createError(result.error.message, statusCode, result.error.code);
+      }
+
+      res.json({
+        success: true,
+        data: result.data,
+      });
+    })
+  );
+
+  /**
+   * @openapi
+   * /api/posts/{id}/like:
+   *   delete:
+   *     summary: Unlike a post
+   *     description: Removes a like from a post
+   *     tags: [Posts]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     responses:
+   *       200:
+   *         description: Post unliked successfully
+   *       400:
+   *         description: Not liked yet
+   *       401:
+   *         description: Authentication required
+   *       404:
+   *         description: Post not found
+   */
+  router.delete(
+    '/:id/like',
+    deps.authMiddleware,
+    asyncHandler(async (req: Request, res: Response) => {
+      if (!req.user) {
+        throw createError('Authentication required', 401, 'UNAUTHORIZED');
+      }
+
+      const result = await unlikePostUseCase.execute({
+        userId: req.user.userId,
+        postId: req.params.id,
+      });
+
+      if (!result.success) {
+        const statusCode =
+          result.error.code === 'POST_NOT_FOUND'
+            ? 404
+            : result.error.code === 'VALIDATION_ERROR'
+            ? 400
+            : result.error.code === 'USER_NOT_FOUND'
+            ? 404
+            : 400;
         throw createError(result.error.message, statusCode, result.error.code);
       }
 

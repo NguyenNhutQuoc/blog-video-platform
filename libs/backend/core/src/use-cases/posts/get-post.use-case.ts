@@ -7,6 +7,7 @@
 import { PostStatus, PostVisibility } from '@blog/shared/domain';
 import type { IPostRepository } from '../../ports/repositories/post.repository.interface.js';
 import type { IUserRepository } from '../../ports/repositories/user.repository.interface.js';
+import type { ILikeRepository } from '../../ports/repositories/like.repository.interface.js';
 import { type Result, success, failure, ErrorCodes } from '../common/result.js';
 
 export interface GetPostInput {
@@ -37,6 +38,7 @@ export interface GetPostOutput {
     publishedAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
+    isLiked: boolean;
   };
   author: {
     id: string;
@@ -59,6 +61,7 @@ export interface GetPostOutput {
 export interface GetPostDependencies {
   postRepository: IPostRepository;
   userRepository: IUserRepository;
+  likeRepository?: ILikeRepository;
 }
 
 export class GetPostUseCase {
@@ -115,7 +118,16 @@ export class GetPostUseCase {
 
     const authorData = author.toJSON();
 
-    // 6. Return result
+    // 6. Check if current user has liked this post
+    let isLiked = false;
+    if (input.userId && this.deps.likeRepository) {
+      isLiked = await this.deps.likeRepository.isPostLikedByUser(
+        input.userId,
+        postData.id
+      );
+    }
+
+    // 7. Return result
     return success({
       post: {
         id: postData.id,
@@ -135,6 +147,7 @@ export class GetPostUseCase {
         publishedAt: postData.publishedAt,
         createdAt: postData.createdAt,
         updatedAt: postData.updatedAt,
+        isLiked,
       },
       author: {
         id: authorData.id,
