@@ -52,14 +52,13 @@
       }
     },
     {
-      "plugin": "@nx/next/plugin",
+      "plugin": "@nx/vite/plugin",
       "options": {
-        "startTargetName": "start",
         "buildTargetName": "build",
-        "devTargetName": "dev",
-        "serveStaticTargetName": "serve-static",
-        "buildDepsTargetName": "build-deps",
-        "watchDepsTargetName": "watch-deps"
+        "serveTargetName": "serve",
+        "previewTargetName": "preview",
+        "testTargetName": "test",
+        "serveStaticTargetName": "serve-static"
       }
     },
     {
@@ -93,10 +92,19 @@
     }
   },
   "generators": {
-    "@nx/next": {
+    "@nx/react": {
       "application": {
         "style": "css",
-        "linter": "none"
+        "linter": "eslint",
+        "bundler": "vite"
+      },
+      "component": {
+        "style": "css"
+      },
+      "library": {
+        "style": "css",
+        "linter": "eslint",
+        "bundler": "vite"
       }
     }
   }

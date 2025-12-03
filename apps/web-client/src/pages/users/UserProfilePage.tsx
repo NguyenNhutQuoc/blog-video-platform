@@ -1,7 +1,5 @@
-'use client';
-
-import { useState, Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
   Box,
@@ -21,7 +19,7 @@ import {
   PostCardSkeleton,
   UserProfileCardSkeleton,
 } from '@blog/shared-ui-kit';
-import { useAuth } from '../../../providers/AuthProvider';
+import { useAuth } from '../../providers/AuthProvider';
 import {
   useUser,
   useUserPosts,
@@ -34,9 +32,9 @@ import {
   CursorPaginatedResponse,
 } from '@blog/shared-data-access';
 
-function UserProfileContent() {
+export default function UserProfilePage() {
   const params = useParams();
-  const router = useRouter();
+  const navigate = useNavigate();
   const { user: currentUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
   const username = params.username as string;
@@ -67,7 +65,7 @@ function UserProfileContent() {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/');
+    navigate('/');
   };
 
   if (userLoading) {
@@ -77,10 +75,10 @@ function UserProfileContent() {
           user={currentUser || undefined}
           notificationCount={0}
           onProfileClick={() =>
-            currentUser && router.push(`/users/${currentUser.username}`)
+            currentUser && navigate(`/users/${currentUser.username}`)
           }
-          onLoginClick={() => router.push('/auth/login')}
-          onCreatePostClick={() => router.push('/posts/new')}
+          onLoginClick={() => navigate('/auth/login')}
+          onCreatePostClick={() => navigate('/posts/new')}
           onLogoutClick={handleLogout}
         />
         <Container maxWidth="md" sx={{ py: 4 }}>
@@ -112,10 +110,10 @@ function UserProfileContent() {
           user={currentUser || undefined}
           notificationCount={0}
           onProfileClick={() =>
-            currentUser && router.push(`/users/${currentUser.username}`)
+            currentUser && navigate(`/users/${currentUser.username}`)
           }
-          onLoginClick={() => router.push('/auth/login')}
-          onCreatePostClick={() => router.push('/posts/new')}
+          onLoginClick={() => navigate('/auth/login')}
+          onCreatePostClick={() => navigate('/posts/new')}
           onLogoutClick={handleLogout}
         />
         <Container maxWidth="md" sx={{ py: 8 }}>
@@ -146,10 +144,10 @@ function UserProfileContent() {
         user={currentUser || undefined}
         notificationCount={0}
         onProfileClick={() =>
-          currentUser && router.push(`/users/${currentUser.username}`)
+          currentUser && navigate(`/users/${currentUser.username}`)
         }
-        onLoginClick={() => router.push('/auth/login')}
-        onCreatePostClick={() => router.push('/posts/new')}
+        onLoginClick={() => navigate('/auth/login')}
+        onCreatePostClick={() => navigate('/posts/new')}
         onLogoutClick={handleLogout}
       />
       <Container maxWidth="md" sx={{ py: 4 }}>
@@ -342,34 +340,5 @@ function UserProfileContent() {
         )}
       </Container>
     </>
-  );
-}
-
-export default function UserProfilePage() {
-  return (
-    <Suspense
-      fallback={
-        <Container maxWidth="md" sx={{ py: 4 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 4,
-              mb: 3,
-              borderRadius: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <UserProfileCardSkeleton />
-          </Paper>
-          <Stack spacing={3}>
-            <PostCardSkeleton />
-            <PostCardSkeleton hasImage={false} />
-          </Stack>
-        </Container>
-      }
-    >
-      <UserProfileContent />
-    </Suspense>
   );
 }

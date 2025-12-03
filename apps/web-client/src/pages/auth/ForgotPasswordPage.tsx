@@ -1,7 +1,5 @@
-'use client';
-
 import { useState } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -79,7 +77,7 @@ export default function ForgotPasswordPage() {
               Please check your email and follow the instructions to reset your
               password.
             </Typography>
-            <Link href="/auth/login" style={{ textDecoration: 'none' }}>
+            <Link to="/auth/login" style={{ textDecoration: 'none' }}>
               <Button variant="outlined" startIcon={<ArrowBack />}>
                 Back to Sign In
               </Button>
@@ -127,7 +125,7 @@ export default function ForgotPasswordPage() {
               </Button>
 
               <Box textAlign="center">
-                <Link href="/auth/login" style={{ textDecoration: 'none' }}>
+                <Link to="/auth/login" style={{ textDecoration: 'none' }}>
                   <Button variant="text" startIcon={<ArrowBack />}>
                     Back to Sign In
                   </Button>

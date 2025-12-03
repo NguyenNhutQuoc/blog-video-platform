@@ -6,34 +6,50 @@
   "tags": ["scope:web", "type:app"],
   "targets": {
     "build": {
-      "executor": "@nx/next:build",
+      "executor": "@nx/vite:build",
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
-        "outputPath": "apps/web-client/.next"
+        "outputPath": "dist/apps/web-client"
       },
       "configurations": {
         "development": {
-          "outputPath": "apps/web-client"
+          "mode": "development"
         },
-        "production": {}
+        "production": {
+          "mode": "production"
+        }
       }
     },
     "serve": {
-      "executor": "@nx/next:server",
+      "executor": "@nx/vite:dev-server",
       "defaultConfiguration": "development",
       "options": {
-        "buildTarget": "@blog-video-platform/web-client:build",
-        "dev": true
+        "buildTarget": "@blog-video-platform/web-client:build"
       },
       "configurations": {
         "development": {
           "buildTarget": "@blog-video-platform/web-client:build:development",
-          "dev": true
+          "hmr": true
         },
         "production": {
           "buildTarget": "@blog-video-platform/web-client:build:production",
-          "dev": false
+          "hmr": false
+        }
+      }
+    },
+    "preview": {
+      "executor": "@nx/vite:preview-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "@blog-video-platform/web-client:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "@blog-video-platform/web-client:build:development"
+        },
+        "production": {
+          "buildTarget": "@blog-video-platform/web-client:build:production"
         }
       }
     },

@@ -46,10 +46,22 @@ export const getAccessToken = (): string | null => {
   return null;
 };
 
+// Get base URL - support both Vite and fallback environments
+const getBaseUrl = (): string => {
+  // Vite environment
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  // Node.js / fallback
+  if (typeof process !== 'undefined' && process.env?.['API_URL']) {
+    return process.env['API_URL'];
+  }
+  return 'http://localhost:3000/api';
+};
+
 // Create axios instance
 const createApiClient = (): AxiosInstance => {
-  const baseURL =
-    process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:3000/api';
+  const baseURL = getBaseUrl();
 
   const client = axios.create({
     baseURL,

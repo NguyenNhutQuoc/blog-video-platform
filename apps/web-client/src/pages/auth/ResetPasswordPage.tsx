@@ -1,8 +1,5 @@
-'use client';
-
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -37,9 +34,9 @@ const resetPasswordSchema = z
 
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
-function ResetPasswordForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+export default function ResetPasswordPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
@@ -75,7 +72,7 @@ function ResetPasswordForm() {
       });
       setResetSuccess(true);
       setTimeout(() => {
-        router.push('/auth/login');
+        navigate('/auth/login');
       }, 3000);
     } catch (error) {
       console.error('Reset password failed:', error);
@@ -99,10 +96,7 @@ function ResetPasswordForm() {
             link.
           </Alert>
           <Box textAlign="center" mt={3}>
-            <Link
-              href="/auth/forgot-password"
-              style={{ textDecoration: 'none' }}
-            >
+            <Link to="/auth/forgot-password" style={{ textDecoration: 'none' }}>
               <Button variant="contained">Request New Link</Button>
             </Link>
           </Box>
@@ -234,29 +228,5 @@ function ResetPasswordForm() {
         )}
       </Paper>
     </Container>
-  );
-}
-
-export default function ResetPasswordPage() {
-  return (
-    <Suspense
-      fallback={
-        <Container maxWidth="sm" sx={{ py: 8 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 4,
-              borderRadius: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <Typography>Loading...</Typography>
-          </Paper>
-        </Container>
-      }
-    >
-      <ResetPasswordForm />
-    </Suspense>
   );
 }

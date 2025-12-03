@@ -1,7 +1,5 @@
-'use client';
-
-import { useState, Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,7 +30,7 @@ import {
   CommentCard,
   VideoPlayer,
 } from '@blog/shared-ui-kit';
-import { useAuth } from '../../../providers/AuthProvider';
+import { useAuth } from '../../providers/AuthProvider';
 import {
   usePost,
   usePostComments,
@@ -50,9 +48,9 @@ const commentSchema = z.object({
 
 type CommentFormData = z.infer<typeof commentSchema>;
 
-function PostDetailContent() {
+export default function PostDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const postId = params.id as string;
@@ -105,7 +103,7 @@ function PostDetailContent() {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/');
+    navigate('/');
   };
 
   if (postLoading) {
@@ -114,9 +112,9 @@ function PostDetailContent() {
         <NavigationBar
           user={user || undefined}
           notificationCount={0}
-          onProfileClick={() => user && router.push(`/users/${user.username}`)}
-          onLoginClick={() => router.push('/auth/login')}
-          onCreatePostClick={() => router.push('/posts/new')}
+          onProfileClick={() => user && navigate(`/users/${user.username}`)}
+          onLoginClick={() => navigate('/auth/login')}
+          onCreatePostClick={() => navigate('/posts/new')}
           onLogoutClick={handleLogout}
         />
         <Container maxWidth="md" sx={{ py: 8 }}>
@@ -134,9 +132,9 @@ function PostDetailContent() {
         <NavigationBar
           user={user || undefined}
           notificationCount={0}
-          onProfileClick={() => user && router.push(`/users/${user.username}`)}
-          onLoginClick={() => router.push('/auth/login')}
-          onCreatePostClick={() => router.push('/posts/new')}
+          onProfileClick={() => user && navigate(`/users/${user.username}`)}
+          onLoginClick={() => navigate('/auth/login')}
+          onCreatePostClick={() => navigate('/posts/new')}
           onLogoutClick={handleLogout}
         />
         <Container maxWidth="md" sx={{ py: 8 }}>
@@ -153,9 +151,9 @@ function PostDetailContent() {
       <NavigationBar
         user={user || undefined}
         notificationCount={0}
-        onProfileClick={() => user && router.push(`/users/${user.username}`)}
-        onLoginClick={() => router.push('/auth/login')}
-        onCreatePostClick={() => router.push('/posts/new')}
+        onProfileClick={() => user && navigate(`/users/${user.username}`)}
+        onLoginClick={() => navigate('/auth/login')}
+        onCreatePostClick={() => navigate('/posts/new')}
         onLogoutClick={handleLogout}
       />
       <Container maxWidth="md" sx={{ py: 4 }}>
@@ -196,7 +194,7 @@ function PostDetailContent() {
               {user?.id === post.author?.id && (
                 <>
                   <MenuItem
-                    onClick={() => router.push(`/posts/${postId}/edit`)}
+                    onClick={() => navigate(`/posts/${postId}/edit`)}
                   >
                     Edit
                   </MenuItem>
@@ -409,7 +407,7 @@ function PostDetailContent() {
               </Typography>
               <Button
                 variant="contained"
-                onClick={() => router.push('/auth/login')}
+                onClick={() => navigate('/auth/login')}
               >
                 Sign In
               </Button>
@@ -451,21 +449,5 @@ function PostDetailContent() {
         </Paper>
       </Container>
     </>
-  );
-}
-
-export default function PostDetailPage() {
-  return (
-    <Suspense
-      fallback={
-        <Container maxWidth="md" sx={{ py: 8 }}>
-          <Box display="flex" justifyContent="center">
-            <CircularProgress />
-          </Box>
-        </Container>
-      }
-    >
-      <PostDetailContent />
-    </Suspense>
   );
 }

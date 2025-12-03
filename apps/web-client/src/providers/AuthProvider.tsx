@@ -1,6 +1,4 @@
-'use client';
-
-import React, { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { useMe, useLogout } from '@blog/shared-data-access';
 import type { User } from '@blog/shared-data-access';
 

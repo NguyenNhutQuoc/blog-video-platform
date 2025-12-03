@@ -1,8 +1,5 @@
-'use client';
-
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,7 +26,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const loginMutation = useLogin();
 
@@ -48,7 +45,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       await loginMutation.mutateAsync(data);
-      router.push('/');
+      navigate('/');
     } catch (error) {
       console.error('Login failed:', error);
     }
@@ -131,10 +128,7 @@ export default function LoginPage() {
           </Box>
 
           <Box textAlign="right" mb={3}>
-            <Link
-              href="/auth/forgot-password"
-              style={{ textDecoration: 'none' }}
-            >
+            <Link to="/auth/forgot-password" style={{ textDecoration: 'none' }}>
               <Typography
                 variant="body2"
                 color="primary"
@@ -166,7 +160,7 @@ export default function LoginPage() {
         <Box textAlign="center">
           <Typography variant="body2" color="text.secondary">
             Don't have an account?{' '}
-            <Link href="/auth/register" style={{ textDecoration: 'none' }}>
+            <Link to="/auth/register" style={{ textDecoration: 'none' }}>
               <Typography
                 component="span"
                 color="primary"

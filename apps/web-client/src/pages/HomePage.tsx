@@ -1,14 +1,12 @@
-'use client';
-
 import { Container, Typography, Box, Tabs, Tab, Stack } from '@mui/material';
 import { NavigationBar, PostCard, PostCardSkeleton } from '@blog/shared-ui-kit';
 import { useInfinitePosts } from '@blog/shared-data-access';
 import { useAuth } from '../providers/AuthProvider';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
 export default function HomePage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
 
@@ -25,7 +23,7 @@ export default function HomePage() {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/');
+    navigate('/');
   };
 
   return (
@@ -33,9 +31,9 @@ export default function HomePage() {
       <NavigationBar
         user={user || undefined}
         notificationCount={0}
-        onProfileClick={() => user && router.push(`/users/${user.username}`)}
-        onLoginClick={() => router.push('/auth/login')}
-        onCreatePostClick={() => router.push('/posts/new')}
+        onProfileClick={() => user && navigate(`/users/${user.username}`)}
+        onLoginClick={() => navigate('/auth/login')}
+        onCreatePostClick={() => navigate('/posts/new')}
         onLogoutClick={handleLogout}
       />
 
@@ -74,7 +72,7 @@ export default function HomePage() {
             {posts.map((post) => (
               <Box
                 key={post.id}
-                onClick={() => router.push(`/posts/${post.slug}`)}
+                onClick={() => navigate(`/posts/${post.slug}`)}
                 sx={{ cursor: 'pointer' }}
               >
                 <PostCard

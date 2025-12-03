@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,12 +27,13 @@ import {
   VideoUpload,
   VideoUploadSuccess,
 } from '@blog/shared-ui-kit';
-import { useAuth } from '../../../providers/AuthProvider';
+import { useAuth } from '../../providers/AuthProvider';
 import {
   useCreatePost,
   useCategories,
   useTags,
   useVideoUpload,
+  useDeleteVideo,
   type Category,
   type Tag,
 } from '@blog/shared-data-access';
@@ -57,9 +56,10 @@ const createPostSchema = z.object({
 type CreatePostFormData = z.infer<typeof createPostSchema>;
 
 export default function CreatePostPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const createPostMutation = useCreatePost();
+  const deleteVideoMutation = useDeleteVideo();
 
   // Category and Tag data
   const { data: categories = [], isLoading: categoriesLoading } =
@@ -117,6 +117,22 @@ export default function CreatePostPage() {
     console.error('Video upload error:', error);
   }, []);
 
+  // Video delete handler - calls API to actually delete the video
+  const handleRemoveVideo = useCallback(async () => {
+    if (!uploadedVideoId) return;
+
+    try {
+      await deleteVideoMutation.mutateAsync({ videoId: uploadedVideoId });
+      setUploadedVideoId(null);
+      setUploadedVideoMeta(null);
+    } catch (error) {
+      console.error('Failed to delete video:', error);
+      // Still clear local state even if API fails
+      setUploadedVideoId(null);
+      setUploadedVideoMeta(null);
+    }
+  }, [uploadedVideoId, deleteVideoMutation]);
+
   const {
     control,
     handleSubmit,
@@ -146,7 +162,7 @@ export default function CreatePostPage() {
         visibility: data.visibility,
         videoId: uploadedVideoId || undefined,
       });
-      router.push('/');
+      navigate('/');
     } catch (error) {
       console.error('Create post failed:', error);
     }
@@ -154,7 +170,7 @@ export default function CreatePostPage() {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/');
+    navigate('/');
   };
 
   if (!user) {
@@ -163,7 +179,7 @@ export default function CreatePostPage() {
         <NavigationBar
           user={undefined}
           notificationCount={0}
-          onLoginClick={() => router.push('/auth/login')}
+          onLoginClick={() => navigate('/auth/login')}
         />
         <Container maxWidth="md" sx={{ py: 8 }}>
           <Alert severity="warning">Please sign in to create a post.</Alert>
@@ -177,9 +193,9 @@ export default function CreatePostPage() {
       <NavigationBar
         user={user}
         notificationCount={0}
-        onProfileClick={() => router.push(`/users/${user.username}`)}
-        onLoginClick={() => router.push('/auth/login')}
-        onCreatePostClick={() => router.push('/posts/new')}
+        onProfileClick={() => navigate(`/users/${user.username}`)}
+        onLoginClick={() => navigate('/auth/login')}
+        onCreatePostClick={() => navigate('/posts/new')}
         onLogoutClick={handleLogout}
       />
       <Container maxWidth="md" sx={{ py: 4 }}>
@@ -322,10 +338,7 @@ export default function CreatePostPage() {
                   videoId={uploadedVideoId}
                   filename={uploadedVideoMeta?.filename}
                   fileSize={uploadedVideoMeta?.fileSize}
-                  onRemove={() => {
-                    setUploadedVideoId(null);
-                    setUploadedVideoMeta(null);
-                  }}
+                  onRemove={handleRemoveVideo}
                   showDetails
                 />
               )}
@@ -477,7 +490,7 @@ export default function CreatePostPage() {
               <Button
                 variant="outlined"
                 size="large"
-                onClick={() => router.back()}
+                onClick={() => navigate(-1)}
               >
                 Cancel
               </Button>

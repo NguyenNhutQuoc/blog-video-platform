@@ -1,8 +1,5 @@
-'use client';
-
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -49,7 +46,7 @@ const registerSchema = z
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const registerMutation = useRegister();
@@ -73,7 +70,7 @@ export default function RegisterPage() {
     try {
       const { confirmPassword, ...registerData } = data;
       await registerMutation.mutateAsync(registerData);
-      router.push('/');
+      navigate('/');
     } catch (error) {
       console.error('Registration failed:', error);
     }
@@ -246,7 +243,7 @@ export default function RegisterPage() {
         <Box textAlign="center">
           <Typography variant="body2" color="text.secondary">
             Already have an account?{' '}
-            <Link href="/auth/login" style={{ textDecoration: 'none' }}>
+            <Link to="/auth/login" style={{ textDecoration: 'none' }}>
               <Typography
                 component="span"
                 color="primary"

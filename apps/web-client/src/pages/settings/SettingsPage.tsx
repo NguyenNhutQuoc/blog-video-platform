@@ -1,7 +1,4 @@
-'use client';
-
-import { Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,7 +9,6 @@ import {
   TextField,
   Button,
   Paper,
-  CircularProgress,
   Stack,
   Divider,
   Avatar,
@@ -36,8 +32,8 @@ const profileSchema = z.object({
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
-function SettingsContent() {
-  const router = useRouter();
+export default function SettingsPage() {
+  const navigate = useNavigate();
   const { user, logout, refreshUser } = useAuth();
   const updateProfileMutation = useUpdateProfile();
 
@@ -83,7 +79,7 @@ function SettingsContent() {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/');
+    navigate('/');
   };
 
   const handleCancel = () => {
@@ -91,7 +87,7 @@ function SettingsContent() {
   };
 
   if (!user) {
-    router.push('/auth/login');
+    navigate('/auth/login');
     return null;
   }
 
@@ -100,9 +96,9 @@ function SettingsContent() {
       <NavigationBar
         user={user}
         notificationCount={0}
-        onProfileClick={() => router.push(`/users/${user.username}`)}
-        onLoginClick={() => router.push('/auth/login')}
-        onCreatePostClick={() => router.push('/posts/new')}
+        onProfileClick={() => navigate(`/users/${user.username}`)}
+        onLoginClick={() => navigate('/auth/login')}
+        onCreatePostClick={() => navigate('/posts/new')}
         onLogoutClick={handleLogout}
       />
       <Container maxWidth="md" sx={{ py: 4 }}>
@@ -328,7 +324,7 @@ function SettingsContent() {
             <Button
               variant="outlined"
               color="primary"
-              onClick={() => router.push('/settings/password')}
+              onClick={() => navigate('/settings/password')}
               fullWidth
               sx={{ mb: 2 }}
             >
@@ -341,21 +337,5 @@ function SettingsContent() {
         </Paper>
       </Container>
     </>
-  );
-}
-
-export default function SettingsPage() {
-  return (
-    <Suspense
-      fallback={
-        <Container maxWidth="md" sx={{ py: 8 }}>
-          <Box display="flex" justifyContent="center">
-            <CircularProgress />
-          </Box>
-        </Container>
-      }
-    >
-      <SettingsContent />
-    </Suspense>
   );
 }

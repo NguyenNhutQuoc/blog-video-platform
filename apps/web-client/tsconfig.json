@@ -1,42 +1,24 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "noEmit": true,
-    "emitDeclarationOnly": false,
-    "module": "esnext",
+    "module": "ESNext",
     "moduleResolution": "bundler",
     "isolatedModules": true,
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "allowJs": true,
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "types": ["vite/client", "node"],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    },
-    "rootDir": "src",
-    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
+      "@/*": ["./src/*"]
+    }
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.js",
-    "src/**/*.jsx",
-    "../../apps/web-client/.next/types/**/*.ts",
-    "../../dist/apps/web-client/.next/types/**/*.ts",
-    "next-env.d.ts",
-    ".next/types/**/*.ts"
-  ],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "src/**/*.jsx"],
   "exclude": [
     "out-tsc",
     "dist",
@@ -44,8 +26,7 @@
     "jest.config.ts",
     "jest.config.cts",
     "src/**/*.spec.ts",
-    "src/**/*.test.ts",
-    ".next"
+    "src/**/*.test.ts"
   ],
   "references": [
     {

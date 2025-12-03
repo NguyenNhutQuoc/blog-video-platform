@@ -1,7 +1,5 @@
-'use client';
-
-import { Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,15 +10,13 @@ import {
   TextField,
   Button,
   Paper,
-  CircularProgress,
   Stack,
   IconButton,
   InputAdornment,
 } from '@mui/material';
 import { ArrowBack, Visibility, VisibilityOff } from '@mui/icons-material';
 import { NavigationBar } from '@blog/shared-ui-kit';
-import { useAuth } from '../../../providers/AuthProvider';
-import { useState } from 'react';
+import { useAuth } from '../../providers/AuthProvider';
 
 const passwordSchema = z
   .object({
@@ -41,8 +37,8 @@ const passwordSchema = z
 
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
-function ChangePasswordContent() {
-  const router = useRouter();
+export default function ChangePasswordPage() {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -78,7 +74,7 @@ function ChangePasswordContent() {
       alert('Password changed successfully! Please log in again.');
       reset();
       await logout();
-      router.push('/auth/login');
+      navigate('/auth/login');
     } catch (error) {
       console.error('Change password failed:', error);
       alert('Failed to change password. Please check your current password.');
@@ -87,11 +83,11 @@ function ChangePasswordContent() {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/');
+    navigate('/');
   };
 
   if (!user) {
-    router.push('/auth/login');
+    navigate('/auth/login');
     return null;
   }
 
@@ -100,9 +96,9 @@ function ChangePasswordContent() {
       <NavigationBar
         user={user}
         notificationCount={0}
-        onProfileClick={() => router.push(`/users/${user.username}`)}
-        onLoginClick={() => router.push('/auth/login')}
-        onCreatePostClick={() => router.push('/posts/new')}
+        onProfileClick={() => navigate(`/users/${user.username}`)}
+        onLoginClick={() => navigate('/auth/login')}
+        onCreatePostClick={() => navigate('/posts/new')}
         onLogoutClick={handleLogout}
       />
       <Container maxWidth="sm" sx={{ py: 4 }}>
@@ -116,7 +112,7 @@ function ChangePasswordContent() {
           }}
         >
           <Box mb={3} display="flex" alignItems="center" gap={2}>
-            <IconButton onClick={() => router.push('/settings')}>
+            <IconButton onClick={() => navigate('/settings')}>
               <ArrowBack />
             </IconButton>
             <Box>
@@ -252,7 +248,7 @@ function ChangePasswordContent() {
             <Stack direction="row" spacing={2}>
               <Button
                 variant="outlined"
-                onClick={() => router.push('/settings')}
+                onClick={() => navigate('/settings')}
                 fullWidth
               >
                 Cancel
@@ -272,21 +268,5 @@ function ChangePasswordContent() {
         </Paper>
       </Container>
     </>
-  );
-}
-
-export default function ChangePasswordPage() {
-  return (
-    <Suspense
-      fallback={
-        <Container maxWidth="sm" sx={{ py: 8 }}>
-          <Box display="flex" justifyContent="center">
-            <CircularProgress />
-          </Box>
-        </Container>
-      }
-    >
-      <ChangePasswordContent />
-    </Suspense>
   );
 }
