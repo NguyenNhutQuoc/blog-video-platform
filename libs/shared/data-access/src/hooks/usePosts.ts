@@ -64,7 +64,11 @@ export const useInfinitePosts = (filters: Omit<PostFilters, 'cursor'> = {}) => {
 };
 
 // Get single post - transforms backend response to flat Post structure
-export const usePost = (idOrSlug: string, viewerId?: string) => {
+export const usePost = (
+  idOrSlug: string,
+  viewerId?: string,
+  enabled = true
+) => {
   return useQuery({
     queryKey: [...postKeys.detail(idOrSlug), viewerId ?? 'guest'],
     queryFn: async (): Promise<Post> => {
@@ -84,7 +88,7 @@ export const usePost = (idOrSlug: string, viewerId?: string) => {
         video: data.video ?? null,
       };
     },
-    enabled: !!idOrSlug,
+    enabled: !!idOrSlug && enabled,
   });
 };
 

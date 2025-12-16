@@ -16,7 +16,11 @@ export const commentKeys = {
 };
 
 // Get root comments for a post (cursor-based)
-export const usePostComments = (postId: string, viewerId?: string) => {
+export const usePostComments = (
+  postId: string,
+  viewerId?: string,
+  enabled = true
+) => {
   return useInfiniteQuery({
     queryKey: [...commentKeys.byPost(postId), viewerId ?? 'guest'],
     queryFn: async ({
@@ -30,18 +34,13 @@ export const usePostComments = (postId: string, viewerId?: string) => {
           params: { cursor: pageParam, limit: 10 },
         }
       );
-      console.log('Fetched comments response:', response.data);
-      console.log(
-        'Comments isLiked:',
-        response.data?.map?.((c: Comment) => ({ id: c.id, isLiked: c.isLiked }))
-      );
       return response.data;
     },
     getNextPageParam: (lastPage) => {
       return lastPage.hasMore ? lastPage.nextCursor : undefined;
     },
     initialPageParam: undefined as string | undefined,
-    enabled: !!postId,
+    enabled: !!postId && enabled,
   });
 };
 

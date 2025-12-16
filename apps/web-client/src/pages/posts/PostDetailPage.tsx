@@ -127,6 +127,16 @@ function CommentWithReplies({
     ) ?? [];
   const isShowingReplyForm = replyingTo === comment.id;
   const isOwnComment = currentUserId === comment.author.id;
+
+  console.log(
+    'CommentWithReplies - currentUserId:',
+    currentUserId,
+    'comment.author.id:',
+    comment.author.id,
+    'isOwnComment:',
+    isOwnComment
+  );
+
   const commentDisplayName = isOwnComment
     ? 'me'
     : comment.author.fullName || comment.author.username;
@@ -274,19 +284,22 @@ export default function PostDetailPage() {
   const postId = params.id as string;
   const viewerKey = user?.id ?? 'guest';
 
+  // Only fetch after auth is complete to ensure correct isLiked status
+  const authReady = !authLoading;
+
   // Wait for auth to complete before fetching post/comments to ensure correct isLiked status
   const {
     data: post,
     isLoading: postLoading,
     refetch: refetchPost,
-  } = usePost(postId, user?.id);
+  } = usePost(postId, user?.id, authReady);
   console.log('Post data:', post);
   const {
     data: commentsData,
     fetchNextPage,
     hasNextPage,
     refetch: refetchComments,
-  } = usePostComments(postId, user?.id);
+  } = usePostComments(postId, user?.id, authReady);
   const createCommentMutation = useCreateComment();
   const likePostMutation = useLikePost();
   const unlikePostMutation = useUnlikePost();
