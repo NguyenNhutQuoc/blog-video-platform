@@ -32,6 +32,7 @@ export function createPostsRoutes(deps: PostRoutesDependencies): Router {
     postRepository: deps.postRepository,
     userRepository: deps.userRepository,
     likeRepository: deps.likeRepository,
+    bookmarkRepository: deps.bookmarkRepository,
   });
 
   const updatePostUseCase = new UpdatePostUseCase({
@@ -49,6 +50,7 @@ export function createPostsRoutes(deps: PostRoutesDependencies): Router {
   const listPostsUseCase = new ListPostsUseCase({
     postRepository: deps.postRepository,
     userRepository: deps.userRepository,
+    bookmarkRepository: deps.bookmarkRepository,
   });
 
   const likePostUseCase = new LikePostUseCase({

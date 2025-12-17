@@ -30,6 +30,11 @@ import { createCategoriesRoutes } from './routes/categories.routes.js';
 import { createTagsRoutes } from './routes/tags.routes.js';
 import { createVideosRoutes } from './routes/videos.routes.js';
 import { createCommentsRoutes } from './routes/comments.routes.js';
+import { createBookmarksRoutes } from './routes/bookmarks.routes.js';
+import type {
+  IBookmarkRepository,
+  IBookmarkFolderRepository,
+} from '@blog/backend/core';
 import type {
   IUserRepository,
   IPostRepository,
@@ -62,6 +67,8 @@ export interface AppDependencies {
   likeRepository: ILikeRepository;
   commentRepository: ICommentRepository;
   commentLikeRepository: ICommentLikeRepository;
+  bookmarkRepository: IBookmarkRepository;
+  bookmarkFolderRepository: IBookmarkFolderRepository;
   videoRepository: IVideoRepository;
   videoQualityRepository?: IVideoQualityRepository;
   tokenGenerator: ITokenGenerator;
@@ -214,6 +221,7 @@ export function createApp(deps: AppDependencies): Express {
     categoryRepository: deps.categoryRepository,
     tagRepository: deps.tagRepository,
     likeRepository: deps.likeRepository,
+    bookmarkRepository: deps.bookmarkRepository,
     authMiddleware,
     optionalAuthMiddleware,
   });
@@ -253,6 +261,14 @@ export function createApp(deps: AppDependencies): Express {
 
   const tagsRoutes = createTagsRoutes({
     tagRepository: deps.tagRepository,
+    authMiddleware,
+  });
+
+  const bookmarksRoutes = createBookmarksRoutes({
+    bookmarkRepository: deps.bookmarkRepository,
+    bookmarkFolderRepository: deps.bookmarkFolderRepository,
+    postRepository: deps.postRepository,
+    userRepository: deps.userRepository,
     authMiddleware,
   });
 
@@ -300,6 +316,8 @@ export function createApp(deps: AppDependencies): Express {
   app.use('/api/users', followsRoutes);
   app.use('/api/categories', categoriesRoutes);
   app.use('/api/tags', tagsRoutes);
+  // Mount bookmarks routes under /api for bookmarks endpoints
+  app.use('/api', bookmarksRoutes);
 
   // Mount video routes if configured
   if (videosRoutes) {

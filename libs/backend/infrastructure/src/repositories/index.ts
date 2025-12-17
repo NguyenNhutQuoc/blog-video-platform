@@ -16,3 +16,5 @@ export * from './login-attempt.repository.js';
 export * from './like.repository.js';
 export * from './comment.repository.js';
 export * from './comment-like.repository.js';
+export * from './bookmark.repository.js';
+export * from './bookmark-folder.repository.js';

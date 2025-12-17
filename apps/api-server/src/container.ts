@@ -17,6 +17,8 @@ import type {
   ILikeRepository,
   ICommentRepository,
   ICommentLikeRepository,
+  IBookmarkRepository,
+  IBookmarkFolderRepository,
   IVideoRepository,
   IVideoQualityRepository,
   IEmailVerificationTokenRepository,
@@ -38,6 +40,8 @@ import {
   PostgresLikeRepository,
   PostgresCommentRepository,
   PostgresCommentLikeRepository,
+  PostgresBookmarkRepository,
+  PostgresBookmarkFolderRepository,
   PostgresVideoRepository,
   VideoQualityRepository,
   EmailVerificationTokenRepository,
@@ -62,6 +66,8 @@ export interface AppContainer {
   likeRepository: ILikeRepository;
   commentRepository: ICommentRepository;
   commentLikeRepository: ICommentLikeRepository;
+  bookmarkRepository: IBookmarkRepository;
+  bookmarkFolderRepository: IBookmarkFolderRepository;
   videoRepository: IVideoRepository;
   videoQualityRepository: IVideoQualityRepository;
   emailVerificationTokenRepository: IEmailVerificationTokenRepository;
@@ -117,6 +123,10 @@ export function createContainer(deps: ContainerDependencies): AppContainer {
   const likeRepository = new PostgresLikeRepository(deps.db);
   const commentRepository = new PostgresCommentRepository(deps.db);
   const commentLikeRepository = new PostgresCommentLikeRepository(deps.db);
+  const bookmarkRepository = new PostgresBookmarkRepository(deps.db);
+  const bookmarkFolderRepository = new PostgresBookmarkFolderRepository(
+    deps.db
+  );
   const videoRepository = new PostgresVideoRepository(deps.db);
   const videoQualityRepository = new VideoQualityRepository(deps.pool);
   const emailVerificationTokenRepository = new EmailVerificationTokenRepository(
@@ -138,6 +148,8 @@ export function createContainer(deps: ContainerDependencies): AppContainer {
     likeRepository,
     commentRepository,
     commentLikeRepository,
+    bookmarkRepository,
+    bookmarkFolderRepository,
     videoRepository,
     videoQualityRepository,
     emailVerificationTokenRepository,

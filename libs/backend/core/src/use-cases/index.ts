@@ -28,3 +28,5 @@ export * from './comment-likes/index.js';
 
 // Video Use Cases
 export * from './videos/index.js';
+
+export * from './bookmarks/index.js';

@@ -71,6 +71,7 @@ export type BookmarkFolderCreate = {
   name: string;
   description?: string | null;
   color?: string | null;
+  sortOrder?: number;
   isDefault?: boolean;
 };
 export type BookmarkFolderUpdate = Partial<

@@ -5,7 +5,7 @@
  * Verifies the file exists in storage before queueing.
  */
 
-import { VideoStatus } from '@blog/shared/domain';
+import { VideoStatus, VideoEntity } from '@blog/shared/domain';
 import type { IVideoRepository } from '../../ports/repositories/video.repository.interface.js';
 import type { IStorageService } from '../../ports/services/storage.service.interface.js';
 import { type Result, success, failure, ErrorCodes } from '../common/result.js';
@@ -91,7 +91,6 @@ export class ConfirmUploadUseCase {
     };
 
     // Create a new entity with updated data for saving
-    const { VideoEntity } = await import('@blog/shared/domain');
     const videoToSave = new VideoEntity(updatedVideo);
     await this.deps.videoRepository.save(videoToSave);
 

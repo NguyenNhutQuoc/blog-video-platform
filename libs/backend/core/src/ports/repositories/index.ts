@@ -68,3 +68,8 @@ export type {
   ICommentLikeRepository,
   CommentLikeQueryOptions,
 } from './comment-like.repository.interface.js';
+export type {
+  IBookmarkRepository,
+  BookmarkQueryOptions,
+} from './bookmark.repository.interface.js';
+export type { IBookmarkFolderRepository } from './bookmark-folder.repository.interface.js';

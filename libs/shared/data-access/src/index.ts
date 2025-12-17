@@ -11,3 +11,4 @@ export * from './hooks/useComments';
 export * from './hooks/useCategories';
 export * from './hooks/useTags';
 export * from './hooks/useVideos';
+export * from './hooks/useBookmarks';

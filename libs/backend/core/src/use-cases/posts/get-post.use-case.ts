@@ -8,6 +8,7 @@ import { PostStatus, PostVisibility } from '@blog/shared/domain';
 import type { IPostRepository } from '../../ports/repositories/post.repository.interface.js';
 import type { IUserRepository } from '../../ports/repositories/user.repository.interface.js';
 import type { ILikeRepository } from '../../ports/repositories/like.repository.interface.js';
+import type { IBookmarkRepository } from '../../ports/repositories/bookmark.repository.interface.js';
 import { type Result, success, failure, ErrorCodes } from '../common/result.js';
 
 export interface GetPostInput {
@@ -39,6 +40,7 @@ export interface GetPostOutput {
     createdAt: Date;
     updatedAt: Date;
     isLiked: boolean;
+    isBookmarked: boolean;
   };
   author: {
     id: string;
@@ -62,6 +64,7 @@ export interface GetPostDependencies {
   postRepository: IPostRepository;
   userRepository: IUserRepository;
   likeRepository?: ILikeRepository;
+  bookmarkRepository?: IBookmarkRepository;
 }
 
 export class GetPostUseCase {
@@ -127,7 +130,16 @@ export class GetPostUseCase {
       );
     }
 
-    // 7. Return result
+    // 7. Check if current user has bookmarked this post
+    let isBookmarked = false;
+    if (input.userId && this.deps.bookmarkRepository) {
+      isBookmarked = await this.deps.bookmarkRepository.isPostBookmarkedByUser(
+        input.userId,
+        postData.id
+      );
+    }
+
+    // 8. Return result
     return success({
       post: {
         id: postData.id,
@@ -148,6 +160,7 @@ export class GetPostUseCase {
         createdAt: postData.createdAt,
         updatedAt: postData.updatedAt,
         isLiked,
+        isBookmarked,
       },
       author: {
         id: authorData.id,

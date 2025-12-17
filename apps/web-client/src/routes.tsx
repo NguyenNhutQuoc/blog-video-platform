@@ -17,6 +17,7 @@ const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'));
 const ChangePasswordPage = lazy(
   () => import('./pages/settings/ChangePasswordPage')
 );
+const BookmarksPage = lazy(() => import('./pages/bookmarks/BookmarksPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 function PageLoader() {
@@ -54,6 +55,9 @@ export function AppRoutes() {
 
         {/* User routes */}
         <Route path="/users/:username" element={<UserProfilePage />} />
+
+        {/* Bookmarks route */}
+        <Route path="/bookmarks" element={<BookmarksPage />} />
 
         {/* Settings routes */}
         <Route path="/settings" element={<SettingsPage />} />

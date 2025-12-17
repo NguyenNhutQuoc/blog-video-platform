@@ -208,9 +208,13 @@ export interface BookmarkFoldersTable {
   id: UUID;
   user_id: string;
   name: string;
+  description: string | null;
+  color: string | null;
+  sort_order: ColumnType<number, number | undefined, number>;
   is_default: ColumnType<boolean, boolean | undefined, boolean>;
-  post_count: ColumnType<number, number | undefined, number>;
+  bookmark_count: ColumnType<number, number | undefined, number>;
   created_at: CreatedAt;
+  updated_at: UpdatedAt;
 }
 
 /**
@@ -221,6 +225,7 @@ export interface BookmarksTable {
   user_id: string;
   post_id: string;
   folder_id: string;
+  note: string | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }

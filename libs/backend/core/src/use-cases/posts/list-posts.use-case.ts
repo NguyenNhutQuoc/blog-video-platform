@@ -10,6 +10,7 @@ import type {
   PostFeedOptions,
 } from '../../ports/repositories/post.repository.interface.js';
 import type { IUserRepository } from '../../ports/repositories/user.repository.interface.js';
+import type { IBookmarkRepository } from '../../ports/repositories/bookmark.repository.interface.js';
 import { type Result, success } from '../common/result.js';
 
 export interface ListPostsInput {
@@ -54,6 +55,7 @@ export interface PostSummary {
   viewCount: number;
   likeCount: number;
   commentCount: number;
+  isBookmarked?: boolean;
   publishedAt: Date | null;
   createdAt: Date;
   author: {
@@ -74,6 +76,7 @@ export interface ListPostsOutput {
 export interface ListPostsDependencies {
   postRepository: IPostRepository;
   userRepository: IUserRepository;
+  bookmarkRepository?: IBookmarkRepository;
 }
 
 const DEFAULT_LIMIT = 20;
@@ -139,6 +142,17 @@ export class ListPostsUseCase {
     const authors = await this.deps.userRepository.findByIds(authorIds);
     const authorMap = new Map(authors.map((a) => [a.toJSON().id, a]));
 
+    // Bulk check if posts are bookmarked (if user is authenticated)
+    let bookmarkedMap = new Map<string, boolean>();
+    if (input.userId && this.deps.bookmarkRepository) {
+      const postIds = posts.map((p) => p.toJSON().id);
+      bookmarkedMap =
+        await this.deps.bookmarkRepository.isPostsBookmarkedByUser(
+          input.userId,
+          postIds
+        );
+    }
+
     // Build response
     const postSummaries: PostSummary[] = posts.map((post) => {
       const postData = post.toJSON();
@@ -159,6 +173,7 @@ export class ListPostsUseCase {
         viewCount: postData.viewCount,
         likeCount: postData.likeCount,
         commentCount: postData.commentCount,
+        isBookmarked: bookmarkedMap.get(postData.id) ?? false,
         publishedAt: postData.publishedAt,
         createdAt: postData.createdAt,
         author: {

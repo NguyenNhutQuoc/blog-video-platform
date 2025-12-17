@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useQueryClient, InfiniteData } from '@tanstack/react-query';
+
 import {
   Container,
   Box,
@@ -22,8 +22,6 @@ import {
 import {
   FavoriteBorder,
   Favorite,
-  BookmarkBorder,
-  Bookmark,
   MoreVert,
   ExpandMore,
   ExpandLess,
@@ -33,6 +31,7 @@ import {
   UserProfileCard,
   CommentCard,
   VideoPlayer,
+  BookmarkButton,
 } from '@blog/shared-ui-kit';
 import { useAuth } from '../../providers/AuthProvider';
 import {
@@ -45,7 +44,6 @@ import {
   useUnlikePost,
   useLikeComment,
   useUnlikeComment,
-  commentKeys,
   Comment,
   CursorPaginatedResponse,
 } from '@blog/shared-data-access';
@@ -278,11 +276,9 @@ export default function PostDetailPage() {
   const params = useParams();
   const navigate = useNavigate();
   const { user, logout, isLoading: authLoading } = useAuth();
-  const queryClient = useQueryClient();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const postId = params.id as string;
-  const viewerKey = user?.id ?? 'guest';
 
   // Only fetch after auth is complete to ensure correct isLiked status
   const authReady = !authLoading;
@@ -338,7 +334,7 @@ export default function PostDetailPage() {
 
   // Use isLiked from post data (from API)
   const isLiked = post?.isLiked ?? false;
-  const isBookmarked = false; // TODO: Implement bookmarked state from API
+  const isBookmarked = post?.isBookmarked ?? false;
   const rootComments =
     commentsData?.pages.flatMap(
       (page: CursorPaginatedResponse<Comment> | Comment[]) =>
@@ -642,7 +638,7 @@ export default function PostDetailPage() {
           <Divider sx={{ my: 3 }} />
 
           {/* Actions */}
-          <Stack direction="row" spacing={2}>
+          <Stack direction="row" spacing={2} alignItems="center">
             <Button
               startIcon={isLiked ? <Favorite /> : <FavoriteBorder />}
               onClick={handleLike}
@@ -650,11 +646,12 @@ export default function PostDetailPage() {
             >
               {post.likeCount} Likes
             </Button>
-            <Button
-              startIcon={isBookmarked ? <Bookmark /> : <BookmarkBorder />}
-            >
-              Bookmark
-            </Button>
+            <BookmarkButton
+              postId={post.id}
+              isBookmarked={isBookmarked}
+              onAuthRequired={!user ? () => navigate('/auth/login') : undefined}
+              showLabel
+            />
           </Stack>
         </Paper>
 

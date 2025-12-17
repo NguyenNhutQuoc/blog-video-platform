@@ -15,6 +15,8 @@ import type {
   ILikeRepository,
   ICommentRepository,
   ICommentLikeRepository,
+  IBookmarkRepository,
+  IBookmarkFolderRepository,
   IPasswordHasher,
   ITokenGenerator,
   IEmailVerificationTokenRepository,
@@ -45,6 +47,7 @@ export interface PostRoutesDependencies {
   categoryRepository: ICategoryRepository;
   tagRepository: ITagRepository;
   likeRepository: ILikeRepository;
+  bookmarkRepository?: IBookmarkRepository;
   authMiddleware: RequestHandler;
   optionalAuthMiddleware: RequestHandler;
 }
@@ -102,5 +105,13 @@ export interface CategoryRoutesDependencies {
 
 export interface TagRoutesDependencies {
   tagRepository: ITagRepository;
+  authMiddleware: RequestHandler;
+}
+
+export interface BookmarkRoutesDependencies {
+  bookmarkRepository: IBookmarkRepository;
+  bookmarkFolderRepository: IBookmarkFolderRepository;
+  postRepository: IPostRepository;
+  userRepository: IUserRepository;
   authMiddleware: RequestHandler;
 }

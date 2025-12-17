@@ -116,6 +116,8 @@ async function main() {
       commentLikeRepository: container.commentLikeRepository,
       videoRepository: container.videoRepository,
       videoQualityRepository: container.videoQualityRepository,
+      bookmarkRepository: container.bookmarkRepository,
+      bookmarkFolderRepository: container.bookmarkFolderRepository,
       passwordHasher: container.passwordHasher,
       tokenGenerator: container.tokenGenerator,
       emailVerificationTokenRepository:

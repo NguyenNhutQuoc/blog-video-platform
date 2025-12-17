@@ -124,6 +124,7 @@ export interface Post {
   commentCount: number;
   bookmarkCount: number;
   isLiked?: boolean;
+  isBookmarked?: boolean;
   publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -239,6 +240,7 @@ export interface PostSummary {
   viewCount: number;
   likeCount: number;
   commentCount: number;
+  isBookmarked?: boolean;
   publishedAt: string | null;
   createdAt: string;
   author: AuthorSummary;
